@@ -23,14 +23,26 @@ public class DeepSeekClient : IDeepSeekClient
         string message,
         CancellationToken cancellationToken = default)
     {
-        var apiKey =
-            _configuration["DeepSeek:ApiKey"];
+        var apiKey = _configuration["DeepSeek:ApiKey"]
+            ?? _configuration["DEEPSEEK_API_KEY"];
+
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "your_deepseek_api_key_here")
+        {
+            throw new InvalidOperationException("DeepSeek API anahtarı yapılandırılmamış. Lütfen .env dosyasında veya ortam değişkenlerinde 'DEEPSEEK_API_KEY' tanımlayınız.");
+        }
+
+        var model = _configuration["DeepSeek:Model"] ?? "deepseek-chat";
 
         var requestBody = new
         {
-            model = "deepseek-chat",
+            model = model,
             messages = new[]
             {
+                new
+                {
+                    role = "system",
+                    content = "Sen bu kullanıcı yönetim ve kişisel bilgi form sisteminin akıllı asistanısın. Kullanıcılara nazik, yardımsever ve Türkçe olarak yanıt verirsin."
+                },
                 new
                 {
                     role = "user",
@@ -58,7 +70,11 @@ public class DeepSeekClient : IDeepSeekClient
                 request,
                 cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"DeepSeek API hatası (Status: {response.StatusCode}): {errorContent}");
+        }
 
         var json =
             await response.Content.ReadAsStringAsync(
@@ -74,8 +90,4 @@ public class DeepSeekClient : IDeepSeekClient
             .GetProperty("content")
             .GetString() ?? string.Empty;
     }
-}
-
-public interface IDeepSeekClient
-{
 }

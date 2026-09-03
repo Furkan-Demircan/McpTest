@@ -71,4 +71,31 @@ export const api = {
     }
     return response.json()
   },
+
+  /**
+   * DeepSeek AI Asistanı ile sohbet eder (POST /api/assistant/chat)
+   */
+  async askAssistant(message: string): Promise<string> {
+    const response = await fetch(`${API_BASE_URL}/assistant/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message }),
+    })
+
+    if (!response.ok) {
+      let errorMsg = `AI servisi yanıt vermedi: ${response.statusText}`
+      try {
+        const errJson = await response.json()
+        if (errJson.message) errorMsg = errJson.message
+      } catch {
+        // use default
+      }
+      throw new Error(errorMsg)
+    }
+
+    const data = await response.json()
+    return data.message
+  },
 }

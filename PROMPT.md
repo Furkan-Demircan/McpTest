@@ -25,8 +25,13 @@ Sistem, modern kurumsal yazılım standartları gözetilerek **Frontend**, **Bac
 * **Mimari Prensipleri:** Clean Architecture (Onion / Hexagonal Architecture yaklaşımı)
   * **Domain Katmanı (`src/Domain`):** Dış dünyadan tamamen bağımsız çekirdek katman. `User` Entity'si, domain kural doğrulamaları (TC No formatı, gelecek tarih engelleme vb.) ve `IUserRepository` arayüzü.
   * **Application Katmanı (`src/Application`):** İş kuralları ve kullanım senaryoları (Use Cases). DTO modelleri (`CreateUserDto`, `UserResponseDto`), servis arayüzleri ve `UserService` (TC No ve E-posta benzersizlik kontrolleri).
-  * **Infrastructure Katmanı (`src/Infrastructure`):** Veritabanı erişimi. Entity Framework Core, PostgreSQL (Npgsql) sürücüsü, `ApplicationDbContext`, Fluent API konfigürasyonları ve `UserRepository` implementasyonu.
-  * **API Katmanı (`src/API`):** HTTP isteklerini karşılayan sunum katmanı. `UsersController`, Swagger/OpenAPI dokümantasyonu, Global Exception Middleware (merkezi hata yakalama) ve CORS yapılandırması.
+  * **Infrastructure Katmanı (`src/Infrastructure`):** Veritabanı ve dış servis erişimi. Entity Framework Core, PostgreSQL (Npgsql) sürücüsü, `ApplicationDbContext`, Fluent API konfigürasyonları, `UserRepository` ve **DeepSeek AI HttpClient entegrasyonu** (`DeepSeekClient`).
+  * **API Katmanı (`src/API`):** HTTP isteklerini karşılayan sunum katmanı. `UsersController`, **`AiAssistantController` (`/api/assistant/chat`)**, Swagger/OpenAPI dokümantasyonu, Global Exception Middleware (merkezi hata yakalama) ve CORS yapılandırması.
+
+### C. Yapay Zeka (AI) Entegrasyonu
+* **Servis Sağlayıcı:** DeepSeek API (`deepseek-chat`)
+* **Rolü:** Kullanıcılara form alanları, güvenlik ve sistem hakkında Türkçe rehberlik sağlayan akıllı asistan motoru.
+* **Yapılandırma:** Ortam değişkenleri ile esnek yapılandırma (`DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`).
 
 ### C. Veritabanı Katmanı
 * **RDBMS:** PostgreSQL 16

@@ -7,15 +7,15 @@ services:
     container_name: usermanagement_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: usermanagement_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: ${POSTGRES_DB:-usermanagement_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d usermanagement_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-usermanagement_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -37,7 +37,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=usermanagement_db;Username=postgres;Password=postgrespassword
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-usermanagement_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgrespassword}
+      # DeepSeek AI Entegrasyonu (.env ortam değişkenleri)
+      - DeepSeek__ApiKey=${DEEPSEEK_API_KEY:-}
+      - DeepSeek__BaseUrl=${DEEPSEEK_BASE_URL:-https://api.deepseek.com/}
+      - DeepSeek__Model=${DEEPSEEK_MODEL:-deepseek-chat}
     networks:
       - app-network
 
