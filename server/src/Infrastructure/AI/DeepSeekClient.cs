@@ -28,7 +28,7 @@ public class DeepSeekClient : IDeepSeekClient
 
         if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "your_deepseek_api_key_here")
         {
-            throw new InvalidOperationException("DeepSeek API anahtarı yapılandırılmamış. Lütfen .env dosyasında veya ortam değişkenlerinde 'DEEPSEEK_API_KEY' tanımlayınız.");
+            throw new InvalidOperationException("DeepSeek API anahtarı yapılandırılmamış. Lütfen kök dizindeki .env dosyasında 'DEEPSEEK_API_KEY' alanına gerçek API anahtarınızı giriniz.");
         }
 
         var model = _configuration["DeepSeek:Model"] ?? "deepseek-chat";
@@ -41,14 +41,16 @@ public class DeepSeekClient : IDeepSeekClient
                 new
                 {
                     role = "system",
-                    content = "Sen bu kullanıcı yönetim ve kişisel bilgi form sisteminin akıllı asistanısın. Kullanıcılara nazik, yardımsever ve Türkçe olarak yanıt verirsin."
+                    content = "Sen kullanıcı yönetim ve kişisel bilgi formu sisteminin yapay zeka asistanısın. Kullanıcılara nazik, yardımcı, kısa ve net Türkçe yanıtlar ver. Formdaki alanlar: Ad, Soyad, 11 haneli TC Kimlik Numarası, E-posta, Anne Adı, Baba Adı ve Doğum Tarihi'dir. Veritabanı olarak PostgreSQL kullanılmaktadır."
                 },
                 new
                 {
                     role = "user",
                     content = message
                 }
-            }
+            },
+            stream = false,
+            temperature = 0.7
         };
 
         using var request = new HttpRequestMessage(
@@ -58,7 +60,7 @@ public class DeepSeekClient : IDeepSeekClient
         request.Headers.Authorization =
             new AuthenticationHeaderValue(
                 "Bearer",
-                apiKey);
+                apiKey.Trim());
 
         request.Content = new StringContent(
             JsonSerializer.Serialize(requestBody),
@@ -70,24 +72,23 @@ public class DeepSeekClient : IDeepSeekClient
                 request,
                 cancellationToken);
 
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+
         if (!response.IsSuccessStatusCode)
         {
-            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"DeepSeek API hatası (Status: {response.StatusCode}): {errorContent}");
+            throw new HttpRequestException($"DeepSeek API hatası (HTTP {(int)response.StatusCode}): {json}");
         }
 
-        var json =
-            await response.Content.ReadAsStringAsync(
-                cancellationToken);
+        using var document = JsonDocument.Parse(json);
 
-        using var document =
-            JsonDocument.Parse(json);
+        if (document.RootElement.TryGetProperty("choices", out var choices) &&
+            choices.GetArrayLength() > 0 &&
+            choices[0].TryGetProperty("message", out var messageElement) &&
+            messageElement.TryGetProperty("content", out var contentElement))
+        {
+            return contentElement.GetString() ?? string.Empty;
+        }
 
-        return document
-            .RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString() ?? string.Empty;
+        return "DeepSeek modelinden geçerli bir yanıt alınamadı.";
     }
 }

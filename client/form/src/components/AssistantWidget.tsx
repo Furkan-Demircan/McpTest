@@ -102,15 +102,17 @@ export const AssistantWidget: React.FC = () => {
         botMessage,
       ])
     } catch (error) {
-      console.error(
-        'Assistant error:',
-        error
-      )
+      console.error('Assistant error:', error)
+
+      const errorText =
+        error instanceof Error
+          ? error.message
+          : 'Asistan ile iletişim kurulurken bir hata oluştu. Lütfen tekrar deneyin.'
 
       const errorMessage: Message = {
         id: getNextId(),
         sender: 'bot',
-        text: 'Asistan ile iletişim kurulurken bir hata oluştu. Lütfen tekrar deneyin.',
+        text: errorText,
         time: getCurrentTimeString(),
       }
 
