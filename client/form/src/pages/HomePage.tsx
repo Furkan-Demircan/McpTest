@@ -17,13 +17,16 @@ export const HomePage: React.FC = () => {
       <div className="home-content">
         <h1>Kişisel Bilgi Sistemi</h1>
         <p className="home-subtitle">
-          Kullanıcı bilgilerini güvenli ve hızlı bir şekilde girmek için aşağıdaki butonu kullanarak form sayfasına geçiş yapabilirsiniz.
+          Kullanıcı bilgilerini güvenli ve hızlı bir şekilde girmek için formu doldurabilir veya veritabanındaki kayıtları listeleyebilirsiniz.
         </p>
 
         <div className="home-cta">
           <Link to="/form" className="btn-go-to-form">
             <span>Form Sayfasına Git</span>
             <span className="btn-arrow">→</span>
+          </Link>
+          <Link to="/users" className="btn-go-to-list">
+            <span>📋 Kayıtlı Kullanıcıları Gör</span>
           </Link>
         </div>
 

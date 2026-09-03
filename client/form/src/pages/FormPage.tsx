@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { api, type UserResponse } from '../services/api'
 import './FormPage.css'
 
 interface FormData {
@@ -29,8 +30,10 @@ export const FormPage: React.FC = () => {
 
   const [formData, setFormData] = useState<FormData>(initialData)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [backendError, setBackendError] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
-  const [submittedData, setSubmittedData] = useState<FormData | null>(null)
+  const [savedUser, setSavedUser] = useState<UserResponse | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -50,6 +53,9 @@ export const FormPage: React.FC = () => {
         delete next[name]
         return next
       })
+    }
+    if (backendError) {
+      setBackendError(null)
     }
   }
 
@@ -92,68 +98,115 @@ export const FormPage: React.FC = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (validate()) {
-      setSubmittedData(formData)
+    if (!validate()) {
+      return
+    }
+
+    setIsLoading(true)
+    setBackendError(null)
+
+    try {
+      // Backend'e HTTP POST isteği
+      const result = await api.createUser({
+        firstName: formData.ad.trim(),
+        lastName: formData.soyad.trim(),
+        tcNo: formData.tcNo.trim(),
+        email: formData.email.trim(),
+        motherName: formData.anneAdi.trim(),
+        fatherName: formData.babaAdi.trim(),
+        birthDate: formData.dogumTarihi,
+      })
+
+      setSavedUser(result)
       setIsSubmitted(true)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setBackendError(err.message)
+      } else {
+        setBackendError('Sunucuya bağlanırken bir hata oluştu.')
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleReset = () => {
     setFormData(initialData)
     setErrors({})
+    setBackendError(null)
     setIsSubmitted(false)
-    setSubmittedData(null)
+    setSavedUser(null)
   }
 
   return (
     <div className="form-page-container">
       <div className="form-page-header">
-        <Link to="/" className="back-link">
-          ← Ana Sayfaya Dön
-        </Link>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <Link to="/" className="back-link" style={{ marginBottom: 0 }}>
+            ← Ana Sayfaya Dön
+          </Link>
+          <Link to="/users" className="back-link" style={{ marginBottom: 0, background: 'var(--social-bg)', borderColor: 'var(--border)', color: 'var(--text-h)' }}>
+            📋 Kayıtlı Kullanıcıları Gör
+          </Link>
+        </div>
         <h1>Kişisel Bilgi Formu</h1>
         <p className="form-description">
-          Lütfen aşağıdaki alanları eksiksiz doldurunuz.
+          Lütfen aşağıdaki alanları eksiksiz doldurunuz. Veriler PostgreSQL veritabanına kaydedilecektir.
         </p>
       </div>
 
-      {isSubmitted && submittedData ? (
+      {backendError && (
+        <div className="backend-error-banner" role="alert">
+          <span className="error-icon">⚠️</span>
+          <span>{backendError}</span>
+        </div>
+      )}
+
+      {isSubmitted && savedUser ? (
         <div className="success-card">
           <div className="success-icon">✓</div>
-          <h2>Form Başarıyla Gönderildi!</h2>
-          <p>Girmiş olduğunuz bilgiler aşağıdaki gibidir:</p>
+          <h2>Kullanıcı Veritabanına Kaydedildi!</h2>
+          <p>Kayıt bilgileri Clean Architecture backend servisi üzerinden başarıyla kaydedildi:</p>
 
           <div className="submitted-info-grid">
             <div className="info-item">
+              <span className="info-label">Sistem Kayıt ID:</span>
+              <span className="info-value id-badge">{savedUser.id}</span>
+            </div>
+            <div className="info-item">
               <span className="info-label">Ad:</span>
-              <span className="info-value">{submittedData.ad}</span>
+              <span className="info-value">{savedUser.firstName}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Soyad:</span>
-              <span className="info-value">{submittedData.soyad}</span>
+              <span className="info-value">{savedUser.lastName}</span>
             </div>
             <div className="info-item">
               <span className="info-label">TC Kimlik No:</span>
-              <span className="info-value">{submittedData.tcNo}</span>
+              <span className="info-value">{savedUser.tcNo}</span>
             </div>
             <div className="info-item">
               <span className="info-label">E-posta:</span>
-              <span className="info-value">{submittedData.email}</span>
+              <span className="info-value">{savedUser.email}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Anne Adı:</span>
-              <span className="info-value">{submittedData.anneAdi}</span>
+              <span className="info-value">{savedUser.motherName}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Baba Adı:</span>
-              <span className="info-value">{submittedData.babaAdi}</span>
+              <span className="info-value">{savedUser.fatherName}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Doğum Tarihi:</span>
-              <span className="info-value">{submittedData.dogumTarihi}</span>
+              <span className="info-value">{savedUser.birthDate}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Kayıt Tarihi:</span>
+              <span className="info-value">{new Date(savedUser.createdAt).toLocaleString('tr-TR')}</span>
             </div>
           </div>
 
@@ -161,6 +214,9 @@ export const FormPage: React.FC = () => {
             <button type="button" className="btn-secondary" onClick={handleReset}>
               Yeni Form Doldur
             </button>
+            <Link to="/users" className="btn-secondary">
+              📋 Kayıtları Gör
+            </Link>
             <Link to="/" className="btn-primary">
               Ana Sayfaya Git
             </Link>
@@ -181,6 +237,7 @@ export const FormPage: React.FC = () => {
                 placeholder="Örn: Ahmet"
                 value={formData.ad}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.ad && <span className="error-text">{errors.ad}</span>}
             </div>
@@ -197,6 +254,7 @@ export const FormPage: React.FC = () => {
                 placeholder="Örn: Yılmaz"
                 value={formData.soyad}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.soyad && <span className="error-text">{errors.soyad}</span>}
             </div>
@@ -214,6 +272,7 @@ export const FormPage: React.FC = () => {
                 maxLength={11}
                 value={formData.tcNo}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.tcNo && <span className="error-text">{errors.tcNo}</span>}
             </div>
@@ -230,6 +289,7 @@ export const FormPage: React.FC = () => {
                 placeholder="Örn: ahmet@example.com"
                 value={formData.email}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.email && <span className="error-text">{errors.email}</span>}
             </div>
@@ -246,6 +306,7 @@ export const FormPage: React.FC = () => {
                 placeholder="Örn: Ayşe"
                 value={formData.anneAdi}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.anneAdi && <span className="error-text">{errors.anneAdi}</span>}
             </div>
@@ -262,6 +323,7 @@ export const FormPage: React.FC = () => {
                 placeholder="Örn: Mehmet"
                 value={formData.babaAdi}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.babaAdi && <span className="error-text">{errors.babaAdi}</span>}
             </div>
@@ -277,17 +339,27 @@ export const FormPage: React.FC = () => {
                 name="dogumTarihi"
                 value={formData.dogumTarihi}
                 onChange={handleChange}
+                disabled={isLoading}
               />
               {errors.dogumTarihi && <span className="error-text">{errors.dogumTarihi}</span>}
             </div>
           </div>
 
           <div className="form-buttons">
-            <button type="button" className="btn-secondary" onClick={handleReset}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleReset}
+              disabled={isLoading}
+            >
               Temizle
             </button>
-            <button type="submit" className="btn-primary">
-              Formu Kaydet
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Kaydediliyor...' : 'Formu Kaydet'}
             </button>
           </div>
         </form>

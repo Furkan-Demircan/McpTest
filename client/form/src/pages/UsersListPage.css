@@ -1,0 +1,349 @@
+.users-list-container {
+  width: 100%;
+  max-width: 1060px;
+  margin: 30px auto 60px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+/* Üst Navigasyon ve Başlık */
+.list-page-header {
+  margin-bottom: 24px;
+}
+
+.header-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.nav-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 8px 16px;
+  background: var(--accent-bg);
+  border-radius: 8px;
+  border: 1px solid var(--accent-border);
+  transition: all 0.2s ease;
+}
+
+.nav-btn-back:hover {
+  transform: translateX(-3px);
+  box-shadow: var(--shadow);
+}
+
+.nav-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--accent);
+  text-decoration: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(170, 59, 255, 0.25);
+}
+
+.nav-btn-add:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.header-titles h1 {
+  font-size: 32px;
+  margin: 0 0 6px;
+}
+
+.header-desc {
+  color: var(--text);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* Kontroller ve Arama */
+.list-controls-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow);
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 15px;
+  opacity: 0.6;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 38px 10px 40px;
+  font-size: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+}
+
+.list-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--social-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-h);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.total-badge {
+  font-size: 14px;
+  color: var(--text);
+  background: var(--code-bg);
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.total-badge strong {
+  color: var(--accent);
+}
+
+/* Hata ve Yüklenme */
+.list-error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1.5px solid #ef4444;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  color: #ef4444;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-content p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.btn-retry {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.list-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Boş Durum */
+.empty-state-card {
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 60px 24px;
+  box-shadow: var(--shadow);
+}
+
+.empty-icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+
+.empty-state-card h3 {
+  font-size: 20px;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+.empty-state-card p {
+  color: var(--text);
+  font-size: 14px;
+  max-width: 440px;
+  margin: 0 auto 24px;
+}
+
+/* Tablo */
+.table-responsive-wrapper {
+  overflow-x: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.users-table th {
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-weight: 600;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.users-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-h);
+  vertical-align: middle;
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.users-table tbody tr:hover {
+  background: var(--accent-bg);
+}
+
+.col-index {
+  color: var(--text);
+  font-weight: 500;
+  width: 40px;
+}
+
+.col-name strong {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.tc-tag {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--code-bg);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  letter-spacing: 0.5px;
+}
+
+.col-email {
+  color: var(--text);
+}
+
+.parent-info {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.col-birth,
+.col-created {
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .list-controls-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .list-stats {
+    justify-content: space-between;
+  }
+}

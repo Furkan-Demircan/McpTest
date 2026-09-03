@@ -26,6 +26,31 @@
 
 .home-cta {
   margin: 16px 0 32px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-go-to-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--social-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.btn-go-to-list:hover {
+  background: var(--border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .btn-go-to-form {

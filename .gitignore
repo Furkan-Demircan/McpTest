@@ -1,10 +1,48 @@
-# Dependencies
+## ==========================================
+## 1. .NET & C# Derleme ve Çıktı Dosyaları
+## ==========================================
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+apphost.exe
+*.dll
+*.pdb
+*.exe
+*.PublishUrl
+*.pubxml
+*.pubxml.user
+publish/
+**/publish/
+
+# Visual Studio Geçici Dosyaları
+.vs/
+**/.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pidb
+*.booproj
+*.svclog
+
+# Test & Coverage
+TestResults/
+[Tt]est[Rr]esults/
+coverage/
+*.lcov
+.nyc_output
+
+## ==========================================
+## 2. Node.js & Frontend (React / Vite)
+## ==========================================
 node_modules/
 **/node_modules/
 .pnp
 .pnp.js
 
-# Production & Build Outputs
+# Build Çıktıları
 dist/
 **/dist/
 dist-ssr/
@@ -14,7 +52,7 @@ build/
 out/
 **/out/
 
-# Logs
+# Log Dosyaları
 logs/
 *.log
 npm-debug.log*
@@ -23,40 +61,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment Variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-!*.env.example
-
-# Editor & IDE Files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-*.sublime-project
-*.sublime-workspace
-
-# Operating System Files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-[Dd]esktop.ini
-
-# Testing & Coverage
-coverage/
-*.lcov
-.nyc_output
-
-# Caches & Temporary Files
+# Önbellekler
 .eslintcache
 .stylelintcache
 .rpt2_cache/
@@ -67,3 +72,40 @@ coverage/
 .parcel-cache
 .cache/
 *.tmp
+
+## ==========================================
+## 3. Ortam Değişkenleri & Güvenlik
+## ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!*.env.example
+
+## ==========================================
+## 4. Editör ve IDE Dosyaları
+## ==========================================
+.idea/
+**/.idea/
+*.sublime-project
+*.sublime-workspace
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+
+## ==========================================
+## 5. İşletim Sistemi Kalıntıları
+## ==========================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+## ==========================================
+## 6. Docker & Veritabanı Kalıntıları
+## ==========================================
+postgres_data/
+**/postgres_data/

@@ -37,6 +37,7 @@ export const AssistantWidget: React.FC = () => {
 
   const quickQuestions = [
     'Hangi bilgiler gerekli?',
+    'Kayıtları nasıl görürüm?',
     'TC No güvenli mi?',
     'Formu nasıl gönderebilirim?',
   ]
@@ -53,6 +54,9 @@ export const AssistantWidget: React.FC = () => {
 
   const generateBotReply = (userText: string): string => {
     const text = userText.toLowerCase()
+    if (text.includes('kayıt') || text.includes('kayit') || text.includes('liste') || text.includes('gör')) {
+      return 'Eklenen tüm kullanıcıları görmek için üst menüdeki "Kayıtlı Kullanıcıları Gör" butonuna tıklayabilir ya da /users sayfasına gidebilirsiniz. Bu sayfada anlık arama ve filtreleme de yapabilirsiniz.'
+    }
     if (text.includes('hangi bilgi') || text.includes('gerekli') || text.includes('alan')) {
       return 'Formda Ad, Soyad, 11 haneli TC Kimlik Numarası, E-posta adresi, Anne Adı, Baba Adı ve Doğum Tarihi alanları doldurulmalıdır.'
     }
@@ -65,7 +69,7 @@ export const AssistantWidget: React.FC = () => {
     if (text.includes('merhaba') || text.includes('selam')) {
       return 'Merhaba! Size nasıl yardımcı olabilirim?'
     }
-    return `"${userText}" sorunuz için teşekkürler! Formdaki alanları doğru girdiğinizden emin olup "Formu Kaydet" butonunu kullanabilirsiniz. Başka bir konuda yardımcı olabilir miyim?`
+    return `"${userText}" sorunuz için teşekkürler! Formdaki alanları doldurabilir veya kayıtlar sayfasına geçebilirsiniz. Başka bir konuda yardımcı olabilir miyim?`
   }
 
   const handleSendMessage = (messageText: string) => {
