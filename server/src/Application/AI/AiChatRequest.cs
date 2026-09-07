@@ -1,6 +1,12 @@
 namespace Application.AI;
 
+public class ChatMessage
+{
+    public string Role { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}
+
 public class AiChatRequest
 {
-    public string Message { get; set; } = string.Empty;
+    public List<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
 }

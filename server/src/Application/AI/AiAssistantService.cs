@@ -15,7 +15,7 @@ public class AiAssistantService : IAiAssistantService
         CancellationToken cancellationToken = default)
     {
         var response = await _deepSeekClient.ChatAsync(
-            request.Message,
+            request.Messages,
             cancellationToken);
 
         return new AiChatResponse

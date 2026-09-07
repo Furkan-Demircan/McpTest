@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import './AssistantWidget.css'
-import { sendAssistantMessage } from '../services/assistantApi'
+import { sendAssistantMessage, type ChatMessage } from '../services/assistantApi'
 
 interface Message {
   id: string
@@ -33,7 +33,9 @@ export const AssistantWidget: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
 
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -64,66 +66,78 @@ export const AssistantWidget: React.FC = () => {
   }, [messages, isOpen, isTyping])
 
   const handleSendMessage = async (messageText: string) => {
-    const trimmedMessage = messageText.trim()
+  const trimmedMessage = messageText.trim()
 
-    if (!trimmedMessage || isTyping) {
-      return
-    }
+  if (!trimmedMessage || isTyping) {
+    return
+  }
 
-    const userMessage: Message = {
+  const userMessage: Message = {
+    id: getNextId(),
+    sender: 'user',
+    text: trimmedMessage,
+    time: getCurrentTimeString(),
+  }
+
+  // Yeni kullanıcı mesajını mevcut history'ye ekle
+  const nextMessages = [
+    ...messages,
+    userMessage,
+  ]
+
+  setMessages(nextMessages)
+  setInputMessage('')
+  setIsTyping(true)
+
+  try {
+    // UI mesajlarını DeepSeek formatına dönüştür
+    const chatMessages: ChatMessage[] =
+      nextMessages.map((message) => ({
+        role:
+          message.sender === 'bot'
+            ? 'assistant'
+            : 'user',
+        content: message.text,
+      }))
+
+    // Tüm conversation history'yi gönder
+    const response =
+      await sendAssistantMessage(chatMessages)
+
+    const botMessage: Message = {
       id: getNextId(),
-      sender: 'user',
-      text: trimmedMessage,
+      sender: 'bot',
+      text: response.message,
       time: getCurrentTimeString(),
     }
 
     setMessages((prev) => [
       ...prev,
-      userMessage,
+      botMessage,
     ])
+  } catch (error) {
+    console.error('Assistant error:', error)
 
-    setInputMessage('')
-    setIsTyping(true)
+    const errorText =
+      error instanceof Error
+        ? error.message
+        : 'Asistan ile iletişim kurulurken bir hata oluştu. Lütfen tekrar deneyin.'
 
-    try {
-      const response = await sendAssistantMessage(
-        trimmedMessage
-      )
-
-      const botMessage: Message = {
-        id: getNextId(),
-        sender: 'bot',
-        text: response.message,
-        time: getCurrentTimeString(),
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        botMessage,
-      ])
-    } catch (error) {
-      console.error('Assistant error:', error)
-
-      const errorText =
-        error instanceof Error
-          ? error.message
-          : 'Asistan ile iletişim kurulurken bir hata oluştu. Lütfen tekrar deneyin.'
-
-      const errorMessage: Message = {
-        id: getNextId(),
-        sender: 'bot',
-        text: errorText,
-        time: getCurrentTimeString(),
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        errorMessage,
-      ])
-    } finally {
-      setIsTyping(false)
+    const errorMessage: Message = {
+      id: getNextId(),
+      sender: 'bot',
+      text: errorText,
+      time: getCurrentTimeString(),
     }
+
+    setMessages((prev) => [
+      ...prev,
+      errorMessage,
+    ])
+  } finally {
+    setIsTyping(false)
   }
+}
 
   const handleSubmit = (
     e: React.FormEvent

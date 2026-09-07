@@ -1,15 +1,21 @@
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export interface AiChatRequest {
-  message: string
+  messages: ChatMessage[]
 }
 
 export interface AiChatResponse {
   message: string
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export async function sendAssistantMessage(
-  message: string
+  messages: ChatMessage[]
 ): Promise<AiChatResponse> {
   const response = await fetch(
     `${API_BASE_URL}/assistant/chat`,
@@ -19,21 +25,25 @@ export async function sendAssistantMessage(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message,
+        messages,
       }),
     }
   )
 
   if (!response.ok) {
-    let errorMessage = `Asistan isteği başarısız oldu (${response.status})`
+    let errorMessage =
+      `Asistan isteği başarısız oldu (${response.status})`
+
     try {
       const errorData = await response.json()
+
       if (errorData.message) {
         errorMessage = errorData.message
       }
     } catch {
       // JSON parse edilemezse varsayılan mesaj kalır
     }
+
     throw new Error(errorMessage)
   }
 

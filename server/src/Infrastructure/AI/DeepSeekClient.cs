@@ -20,35 +20,51 @@ public class DeepSeekClient : IDeepSeekClient
     }
 
     public async Task<string> ChatAsync(
-        string message,
-        CancellationToken cancellationToken = default)
+    List<ChatMessage> messages,
+    CancellationToken cancellationToken = default)
     {
         var apiKey = _configuration["DeepSeek:ApiKey"]
             ?? _configuration["DEEPSEEK_API_KEY"];
 
-        if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "your_deepseek_api_key_here")
+        if (string.IsNullOrWhiteSpace(apiKey) ||
+            apiKey == "your_deepseek_api_key_here")
         {
-            throw new InvalidOperationException("DeepSeek API anahtarı yapılandırılmamış. Lütfen kök dizindeki .env dosyasında 'DEEPSEEK_API_KEY' alanına gerçek API anahtarınızı giriniz.");
+            throw new InvalidOperationException(
+                "DeepSeek API anahtarı yapılandırılmamış. " +
+                "Lütfen kök dizindeki .env dosyasında " +
+                "'DEEPSEEK_API_KEY' alanına gerçek API anahtarınızı giriniz.");
         }
 
-        var model = _configuration["DeepSeek:Model"] ?? "deepseek-chat";
+        var model = _configuration["DeepSeek:Model"]
+            ?? "deepseek-chat";
+
+        var deepSeekMessages = new List<object>
+    {
+        new
+        {
+            role = "system",
+            content = "sen benim kisisel asistanımsın."
+                    // "Sen kullanıcı yönetim ve kişisel bilgi formu sisteminin yapay zeka asistanısın. " +
+                    //   "Kullanıcılara nazik, yardımcı, kısa ve net Türkçe yanıtlar ver. " +
+                    //   "Formdaki alanlar: Ad, Soyad, 11 haneli TC Kimlik Numarası, " +
+                    //   "E-posta, Anne Adı, Baba Adı ve Doğum Tarihi'dir. " +
+                    //   "Veritabanı olarak PostgreSQL kullanılmaktadır."
+        }
+    };
+
+        foreach (var message in messages)
+        {
+            deepSeekMessages.Add(new
+            {
+                role = message.Role,
+                content = message.Content
+            });
+        }
 
         var requestBody = new
         {
             model = model,
-            messages = new[]
-            {
-                new
-                {
-                    role = "system",
-                    content = "Sen kullanıcı yönetim ve kişisel bilgi formu sisteminin yapay zeka asistanısın. Kullanıcılara nazik, yardımcı, kısa ve net Türkçe yanıtlar ver. Formdaki alanlar: Ad, Soyad, 11 haneli TC Kimlik Numarası, E-posta, Anne Adı, Baba Adı ve Doğum Tarihi'dir. Veritabanı olarak PostgreSQL kullanılmaktadır."
-                },
-                new
-                {
-                    role = "user",
-                    content = message
-                }
-            },
+            messages = deepSeekMessages,
             stream = false,
             temperature = 0.7
         };
@@ -72,11 +88,13 @@ public class DeepSeekClient : IDeepSeekClient
                 request,
                 cancellationToken);
 
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var json =
+            await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException($"DeepSeek API hatası (HTTP {(int)response.StatusCode}): {json}");
+            throw new HttpRequestException(
+                $"DeepSeek API hatası (HTTP {(int)response.StatusCode}): {json}");
         }
 
         using var document = JsonDocument.Parse(json);
