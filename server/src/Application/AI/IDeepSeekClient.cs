@@ -2,7 +2,7 @@ namespace Application.AI;
 
 public interface IDeepSeekClient
 {
-    Task<string> ChatAsync(
+    Task<AiChatResponse> ChatAsync(
         List<ChatMessage> message,
         CancellationToken cancellationToken = default);
 }

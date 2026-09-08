@@ -4,8 +4,7 @@ public class AiAssistantService : IAiAssistantService
 {
     private readonly IDeepSeekClient _deepSeekClient;
 
-    public AiAssistantService(
-        IDeepSeekClient deepSeekClient)
+    public AiAssistantService(IDeepSeekClient deepSeekClient)
     {
         _deepSeekClient = deepSeekClient;
     }
@@ -18,9 +17,6 @@ public class AiAssistantService : IAiAssistantService
             request.Messages,
             cancellationToken);
 
-        return new AiChatResponse
-        {
-            Message = response
-        };
+        return response;
     }
 }

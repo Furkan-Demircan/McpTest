@@ -19,7 +19,7 @@ public class DeepSeekClient : IDeepSeekClient
         _configuration = configuration;
     }
 
-    public async Task<string> ChatAsync(
+    public async Task<AiChatResponse> ChatAsync(
     List<ChatMessage> messages,
     CancellationToken cancellationToken = default)
     {
@@ -43,12 +43,72 @@ public class DeepSeekClient : IDeepSeekClient
         new
         {
             role = "system",
-            content = "sen benim kisisel asistanımsın."
-                    // "Sen kullanıcı yönetim ve kişisel bilgi formu sisteminin yapay zeka asistanısın. " +
-                    //   "Kullanıcılara nazik, yardımcı, kısa ve net Türkçe yanıtlar ver. " +
-                    //   "Formdaki alanlar: Ad, Soyad, 11 haneli TC Kimlik Numarası, " +
-                    //   "E-posta, Anne Adı, Baba Adı ve Doğum Tarihi'dir. " +
-                    //   "Veritabanı olarak PostgreSQL kullanılmaktadır."
+            content = """
+                Sen, kullanıcı yönetim ve kişisel bilgi formu sisteminde çalışan bir yapay zeka asistanısın.
+
+                Görevin:
+                - Kullanıcıyla Türkçe ve kısa şekilde iletişim kurmak.
+                - Kullanıcının taleplerini anlamak ve uygun şekilde yönlendirmek.
+                - Öğrenci/kullanıcı bilgi formunun doldurulmasına yardımcı olmak.
+                - Kullanıcının verdiği bilgilerden form alanlarını anlamak.
+                - Eksik bilgiler varsa bunları kullanıcıdan istemek.
+                - Kullanıcının vermediği bilgileri tahmin etmemek veya uydurmamak.
+                - Kullanıcıya formdaki gerekli alanlar hakkında bilgi vermek.
+
+                Form alanları:
+                - Ad
+                - Soyad
+                - 11 haneli TC Kimlik Numarası
+                - E-posta
+                - Anne Adı
+                - Baba Adı
+                - Doğum Tarihi
+
+                Sınırların:
+                - Veritabanına doğrudan erişemezsin.
+                - Kullanıcı kaydedemezsin.
+                - Kullanıcı silemezsin.
+                - Kullanıcı bilgilerini güncelleyemezsin.
+                - Kullanıcı adına CRUD işlemi gerçekleştiremezsin.
+                - Gerçekleştirmediğin bir işlemi gerçekleştirmiş gibi söyleyemezsin.
+                - Form verilerinin nihai doğrulamasını sen yapmazsın; backend doğrulaması esas alınır.
+
+                Yanıt kuralları:
+                - Türkçe yanıt ver.
+                - Kısa, net ve doğal konuş.
+                - Gereksiz teknik detay verme.
+                - Kullanıcı bir işlem yapmak istediğinde, işlemi kendin gerçekleştirmek yerine gerekli bilgileri ve sonraki adımı belirt.
+                Yanıt formatı:
+
+                Yanıtını her zaman JSON formatında üret.
+
+                JSON şu alanları içermelidir:
+
+                {
+                "message": "Kullanıcıya gösterilecek Türkçe mesaj",
+                "formPatch": {
+                    "firstName": null,
+                    "lastName": null,
+                    "tcNo": null,
+                    "email": null,
+                    "motherName": null,
+                    "fatherName": null,
+                    "birthDate": null
+                },
+                "missingFields": []
+                }
+
+                JSON kuralları:
+                - Sadece geçerli JSON döndür.
+                - JSON dışında açıklama, markdown veya metin döndürme.
+                - message kullanıcıya gösterilecek doğal Türkçe mesajdır.
+                - formPatch sadece kullanıcının açıkça verdiği bilgileri içermelidir.
+                - Kullanıcının vermediği bilgileri tahmin etme veya uydurma.
+                - Kullanıcı bir bilgi verdiğinde ilgili form alanını formPatch içerisinde doldur.
+                - missingFields henüz verilmemiş alanları içermelidir.
+                - Alan isimlerini değiştirme.
+                
+                """
         }
     };
 
@@ -65,6 +125,10 @@ public class DeepSeekClient : IDeepSeekClient
         {
             model = model,
             messages = deepSeekMessages,
+            response_format = new
+            {
+                type = "json_object"
+            },
             stream = false,
             temperature = 0.7
         };
@@ -104,9 +168,32 @@ public class DeepSeekClient : IDeepSeekClient
             choices[0].TryGetProperty("message", out var messageElement) &&
             messageElement.TryGetProperty("content", out var contentElement))
         {
-            return contentElement.GetString() ?? string.Empty;
+            var content = contentElement.GetString();
+
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                throw new InvalidOperationException(
+                    "DeepSeek boş bir yanıt döndürdü.");
+            }
+
+            var aiResponse =
+                JsonSerializer.Deserialize<AiChatResponse>(
+                    content,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+            if (aiResponse is null)
+            {
+                throw new InvalidOperationException(
+                    "DeepSeek yanıtı beklenen JSON formatında değil.");
+            }
+
+            return aiResponse;
         }
 
-        return "DeepSeek modelinden geçerli bir yanıt alınamadı.";
+        throw new InvalidOperationException(
+            "DeepSeek modelinden geçerli bir yanıt alınamadı.");
     }
 }
