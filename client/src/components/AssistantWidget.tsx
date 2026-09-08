@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import './AssistantWidget.css'
-import { sendAssistantMessage, type ChatMessage } from '../services/assistantApi'
+import {
+  sendAssistantMessage,
+  type ChatMessage,
+} from '../services/assistantApi'
+
+import { useFormContext } from '../contexts/useFormContext'
 
 interface Message {
   id: string
@@ -29,6 +34,7 @@ function getCurrentTimeString(): string {
 }
 
 export const AssistantWidget: React.FC = () => {
+  const { setFormData } = useFormContext()
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -102,7 +108,34 @@ export const AssistantWidget: React.FC = () => {
 
     // Tüm conversation history'yi gönder
     const response =
-      await sendAssistantMessage(chatMessages)
+  await sendAssistantMessage(chatMessages)
+
+if (response.formPatch) {
+  setFormData((prev) => ({
+    ...prev,
+    ...(response.formPatch.firstName !== undefined && {
+      ad: response.formPatch.firstName,
+    }),
+    ...(response.formPatch.lastName !== undefined && {
+      soyad: response.formPatch.lastName,
+    }),
+    ...(response.formPatch.tcNo !== undefined && {
+      tcNo: response.formPatch.tcNo,
+    }),
+    ...(response.formPatch.email !== undefined && {
+      email: response.formPatch.email,
+    }),
+    ...(response.formPatch.motherName !== undefined && {
+      anneAdi: response.formPatch.motherName,
+    }),
+    ...(response.formPatch.fatherName !== undefined && {
+      babaAdi: response.formPatch.fatherName,
+    }),
+    ...(response.formPatch.birthDate !== undefined && {
+      dogumTarihi: response.formPatch.birthDate,
+    }),
+  }))
+}
 
     const botMessage: Message = {
       id: getNextId(),

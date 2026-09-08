@@ -9,6 +9,18 @@ export interface AiChatRequest {
 
 export interface AiChatResponse {
   message: string
+
+  formPatch: {
+    firstName?: string
+    lastName?: string
+    tcNo?: string
+    email?: string
+    motherName?: string
+    fatherName?: string
+    birthDate?: string
+  }
+
+  missingFields: string[]
 }
 
 const API_BASE_URL =

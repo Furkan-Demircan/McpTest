@@ -1,34 +1,19 @@
 import React, { useState } from 'react'
+import { useFormContext } from '../contexts/useFormContext'
 import { Link } from 'react-router-dom'
+import {
+  initialFormData,
+} from '../contexts/FormContext'
 import { api, type UserResponse } from '../services/api'
 import './FormPage.css'
 
-interface FormData {
-  ad: string
-  soyad: string
-  tcNo: string
-  email: string
-  anneAdi: string
-  babaAdi: string
-  dogumTarihi: string
-}
 
 interface FormErrors {
   [key: string]: string
 }
 
-export const FormPage: React.FC = () => {
-  const initialData: FormData = {
-    ad: '',
-    soyad: '',
-    tcNo: '',
-    email: '',
-    anneAdi: '',
-    babaAdi: '',
-    dogumTarihi: '',
-  }
-
-  const [formData, setFormData] = useState<FormData>(initialData)
+function FormPage() {
+const { formData, setFormData } = useFormContext()
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [backendError, setBackendError] = useState<string | null>(null)
@@ -134,7 +119,7 @@ export const FormPage: React.FC = () => {
   }
 
   const handleReset = () => {
-    setFormData(initialData)
+    setFormData(initialFormData)
     setErrors({})
     setBackendError(null)
     setIsSubmitted(false)
