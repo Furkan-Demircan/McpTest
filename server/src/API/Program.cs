@@ -3,6 +3,7 @@ using Application;
 using Application.AI;
 using Infrastructure;
 using Infrastructure.AI;
+using Infrastructure.AI.DeepSeek;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,15 +35,6 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-
-builder.Services.AddHttpClient<DeepSeekClient, DeepSeekClient>(
-    client =>
-    {
-        client.BaseAddress = new Uri(
-            "https://api.deepseek.com/");
-    });
-
-builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
 
 var app = builder.Build();
 

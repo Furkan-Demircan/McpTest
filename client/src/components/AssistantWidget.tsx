@@ -34,7 +34,7 @@ function getCurrentTimeString(): string {
 }
 
 export const AssistantWidget: React.FC = () => {
-  const { setFormData } = useFormContext()
+  const { formData, setFormData } = useFormContext()
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -108,29 +108,36 @@ export const AssistantWidget: React.FC = () => {
 
     // Tüm conversation history'yi gönder
     const response =
-  await sendAssistantMessage(chatMessages)
+  await sendAssistantMessage(chatMessages, formData)
 
-if (response.formPatch) {
-  setFormData((prev) => ({
-    ...prev,
+if (Object.keys(response.formPatch).length > 0) {
+  setFormData((current) => ({
+    ...current,
+
     ...(response.formPatch.firstName !== undefined && {
       ad: response.formPatch.firstName,
     }),
+
     ...(response.formPatch.lastName !== undefined && {
       soyad: response.formPatch.lastName,
     }),
+
     ...(response.formPatch.tcNo !== undefined && {
       tcNo: response.formPatch.tcNo,
     }),
+
     ...(response.formPatch.email !== undefined && {
       email: response.formPatch.email,
     }),
+
     ...(response.formPatch.motherName !== undefined && {
       anneAdi: response.formPatch.motherName,
     }),
+
     ...(response.formPatch.fatherName !== undefined && {
       babaAdi: response.formPatch.fatherName,
     }),
+
     ...(response.formPatch.birthDate !== undefined && {
       dogumTarihi: response.formPatch.birthDate,
     }),

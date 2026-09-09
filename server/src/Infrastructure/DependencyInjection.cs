@@ -1,6 +1,7 @@
 using Application.AI;
 using Domain.Interfaces;
 using Infrastructure.AI;
+using Infrastructure.AI.DeepSeek;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
 
         // DeepSeek AI Client Yapılandırması
-        services.AddHttpClient<IDeepSeekClient, DeepSeekClient>((serviceProvider, client) =>
+        services.AddHttpClient<IAiProvider, DeepSeekAiProvider>((serviceProvider, client) =>
         {
             var config = serviceProvider.GetRequiredService<IConfiguration>();
             var baseUrl = config["DeepSeek:BaseUrl"]
