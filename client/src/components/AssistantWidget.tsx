@@ -110,37 +110,37 @@ export const AssistantWidget: React.FC = () => {
     const response =
   await sendAssistantMessage(chatMessages, formData)
 
-if (Object.keys(response.formPatch).length > 0) {
+if (response.formPatch && Object.keys(response.formPatch).length > 0) {
   setFormData((current) => ({
     ...current,
 
-    ...(response.formPatch.firstName !== undefined && {
+    ...(response.formPatch.firstName ? {
       ad: response.formPatch.firstName,
-    }),
+    } : {}),
 
-    ...(response.formPatch.lastName !== undefined && {
+    ...(response.formPatch.lastName ? {
       soyad: response.formPatch.lastName,
-    }),
+    } : {}),
 
-    ...(response.formPatch.tcNo !== undefined && {
-      tcNo: response.formPatch.tcNo,
-    }),
+    ...(response.formPatch.tcNo ? {
+      tcNo: response.formPatch.tcNo.replace(/\D/g, '').slice(0, 11),
+    } : {}),
 
-    ...(response.formPatch.email !== undefined && {
+    ...(response.formPatch.email ? {
       email: response.formPatch.email,
-    }),
+    } : {}),
 
-    ...(response.formPatch.motherName !== undefined && {
+    ...(response.formPatch.motherName ? {
       anneAdi: response.formPatch.motherName,
-    }),
+    } : {}),
 
-    ...(response.formPatch.fatherName !== undefined && {
+    ...(response.formPatch.fatherName ? {
       babaAdi: response.formPatch.fatherName,
-    }),
+    } : {}),
 
-    ...(response.formPatch.birthDate !== undefined && {
+    ...(response.formPatch.birthDate ? {
       dogumTarihi: response.formPatch.birthDate,
-    }),
+    } : {}),
   }))
 }
 

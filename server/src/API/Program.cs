@@ -1,17 +1,39 @@
 using API.Middlewares;
 using Application;
-using Application.AI;
+using Application.MCP;
 using Infrastructure;
-using Infrastructure.AI;
-using Infrastructure.AI.DeepSeek;
+using Infrastructure.MCP;
 using Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using ModelContextProtocol.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Katman Bağımlılıkları (Clean Architecture DI)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// MCP Client Yapılandırması
+var mcpServerUrl = builder.Configuration["Mcp:ServerUrl"]
+    ?? throw new InvalidOperationException("MCP Server URL yapılandırılmamış.");
+
+builder.Services.AddSingleton<McpClient>(sp =>
+{
+    var transport = new HttpClientTransport(
+        new HttpClientTransportOptions
+        {
+            Endpoint = new Uri(mcpServerUrl),
+            TransportMode = HttpTransportMode.StreamableHttp
+        });
+
+    return McpClient
+        .CreateAsync(transport)
+        .GetAwaiter()
+        .GetResult();
+});
+
+builder.Services.AddScoped<IMcpClientService, McpClientService>();
+builder.Services.AddScoped<McpClientService>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

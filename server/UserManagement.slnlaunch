@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "profiles": [
+    {
+      "name": "Backend + MCP",
+      "projects": [
+        {
+          "name": "src\\API\\API.csproj",
+          "action": "Start"
+        },
+        {
+          "name": "src\\MCP\\MCP.csproj",
+          "action": "Start"
+        }
+      ]
+    }
+  ]
+}

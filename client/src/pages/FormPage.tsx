@@ -47,35 +47,43 @@ const { formData, setFormData } = useFormContext()
   const validate = (): boolean => {
     const newErrors: FormErrors = {}
 
-    if (!formData.ad.trim()) {
+    const ad = (formData.ad || '').trim()
+    const soyad = (formData.soyad || '').trim()
+    const tcNo = (formData.tcNo || '').trim()
+    const email = (formData.email || '').trim()
+    const anneAdi = (formData.anneAdi || '').trim()
+    const babaAdi = (formData.babaAdi || '').trim()
+    const dogumTarihi = (formData.dogumTarihi || '').trim()
+
+    if (!ad) {
       newErrors.ad = 'Ad alanı zorunludur.'
     }
-    if (!formData.soyad.trim()) {
+    if (!soyad) {
       newErrors.soyad = 'Soyad alanı zorunludur.'
     }
 
-    if (!formData.tcNo.trim()) {
+    if (!tcNo) {
       newErrors.tcNo = 'TC Kimlik Numarası zorunludur.'
-    } else if (formData.tcNo.length !== 11) {
+    } else if (tcNo.length !== 11) {
       newErrors.tcNo = 'TC Kimlik Numarası 11 haneli olmalıdır.'
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!formData.email.trim()) {
+    if (!email) {
       newErrors.email = 'E-posta adresi zorunludur.'
-    } else if (!emailRegex.test(formData.email)) {
+    } else if (!emailRegex.test(email)) {
       newErrors.email = 'Geçerli bir e-posta adresi giriniz.'
     }
 
-    if (!formData.anneAdi.trim()) {
+    if (!anneAdi) {
       newErrors.anneAdi = 'Anne adı zorunludur.'
     }
 
-    if (!formData.babaAdi.trim()) {
+    if (!babaAdi) {
       newErrors.babaAdi = 'Baba adı zorunludur.'
     }
 
-    if (!formData.dogumTarihi) {
+    if (!dogumTarihi) {
       newErrors.dogumTarihi = 'Doğum tarihi seçimi zorunludur.'
     }
 
@@ -87,6 +95,7 @@ const { formData, setFormData } = useFormContext()
     e.preventDefault()
 
     if (!validate()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -96,23 +105,21 @@ const { formData, setFormData } = useFormContext()
     try {
       // Backend'e HTTP POST isteği
       const result = await api.createUser({
-        firstName: formData.ad.trim(),
-        lastName: formData.soyad.trim(),
-        tcNo: formData.tcNo.trim(),
-        email: formData.email.trim(),
-        motherName: formData.anneAdi.trim(),
-        fatherName: formData.babaAdi.trim(),
-        birthDate: formData.dogumTarihi,
+        firstName: (formData.ad || '').trim(),
+        lastName: (formData.soyad || '').trim(),
+        tcNo: (formData.tcNo || '').trim(),
+        email: (formData.email || '').trim(),
+        motherName: (formData.anneAdi || '').trim(),
+        fatherName: (formData.babaAdi || '').trim(),
+        birthDate: formData.dogumTarihi || '',
       })
 
       setSavedUser(result)
       setIsSubmitted(true)
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setBackendError(err.message)
-      } else {
-        setBackendError('Sunucuya bağlanırken bir hata oluştu.')
-      }
+      const message = err instanceof Error ? err.message : 'Sunucuya bağlanırken bir hata oluştu.'
+      setBackendError(message)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setIsLoading(false)
     }
@@ -220,7 +227,7 @@ const { formData, setFormData } = useFormContext()
                 type="text"
                 name="ad"
                 placeholder="Örn: Ahmet"
-                value={formData.ad}
+                value={formData.ad || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -237,7 +244,7 @@ const { formData, setFormData } = useFormContext()
                 type="text"
                 name="soyad"
                 placeholder="Örn: Yılmaz"
-                value={formData.soyad}
+                value={formData.soyad || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -255,7 +262,7 @@ const { formData, setFormData } = useFormContext()
                 name="tcNo"
                 placeholder="11 haneli kimlik numarası"
                 maxLength={11}
-                value={formData.tcNo}
+                value={formData.tcNo || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -272,7 +279,7 @@ const { formData, setFormData } = useFormContext()
                 type="email"
                 name="email"
                 placeholder="Örn: ahmet@example.com"
-                value={formData.email}
+                value={formData.email || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -289,7 +296,7 @@ const { formData, setFormData } = useFormContext()
                 type="text"
                 name="anneAdi"
                 placeholder="Örn: Ayşe"
-                value={formData.anneAdi}
+                value={formData.anneAdi || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -306,7 +313,7 @@ const { formData, setFormData } = useFormContext()
                 type="text"
                 name="babaAdi"
                 placeholder="Örn: Mehmet"
-                value={formData.babaAdi}
+                value={formData.babaAdi || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -322,7 +329,7 @@ const { formData, setFormData } = useFormContext()
                 id="dogumTarihi"
                 type="date"
                 name="dogumTarihi"
-                value={formData.dogumTarihi}
+                value={formData.dogumTarihi || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />

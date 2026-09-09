@@ -1,8 +1,10 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+
 using Application.AI;
 using Infrastructure.AI.DeepSeek.Models;
+
 using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.AI.DeepSeek;
@@ -76,10 +78,6 @@ public class DeepSeekAiProvider : IAiProvider
                 - Gerçekleştirmediğin bir işlemi gerçekleştirmiş gibi söyleme.
                 - Bilmediğin bilgileri uydurma.
 
-                Mevcut form durumu:
-
-                {currentFormData}
-
                 Boş string değerleri doldurulmamış kabul et.
 
                 Kullanıcı yeni bir bilgi verdiğinde fill_student_form
@@ -92,6 +90,39 @@ public class DeepSeekAiProvider : IAiProvider
 
         foreach (var msg in request.Messages)
         {
+            if (msg.Role == "assistant" && msg.ToolCalls.Count > 0)
+            {
+                deepSeekMessages.Add(new
+                {
+                    role = "assistant",
+                    content = msg.Content,
+                    tool_calls = msg.ToolCalls.Select(toolCall => new
+                    {
+                        id = toolCall.Id,
+                        type = "function",
+                        function = new
+                        {
+                            name = toolCall.Name,
+                            arguments = toolCall.Arguments
+                        }
+                    }).ToArray()
+                });
+
+                continue;
+            }
+
+            if (msg.Role == "tool")
+            {
+                deepSeekMessages.Add(new
+                {
+                    role = "tool",
+                    tool_call_id = msg.ToolCallId,
+                    content = msg.Content
+                });
+
+                continue;
+            }
+
             deepSeekMessages.Add(new
             {
                 role = msg.Role,
@@ -99,79 +130,18 @@ public class DeepSeekAiProvider : IAiProvider
             });
         }
 
-        var tools = new object[]
-        {
-            new
+        var tools = request.Tools
+            .Select(tool => new
             {
                 type = "function",
-
                 function = new
                 {
-                    name = "fill_student_form",
-
-                    description =
-                        "Kullanıcının konuşma sırasında açıkça verdiği " +
-                        "kişisel bilgileri kişisel bilgi formuna aktarmak " +
-                        "için kullanılır. Veritabanına kayıt yapmaz.",
-
-                    parameters = new
-                    {
-                        type = "object",
-
-                        properties = new
-                        {
-                            firstName = new
-                            {
-                                type = "string",
-                                description = "Kullanıcının adı"
-                            },
-
-                            lastName = new
-                            {
-                                type = "string",
-                                description = "Kullanıcının soyadı"
-                            },
-
-                            tcNo = new
-                            {
-                                type = "string",
-                                description =
-                                    "Kullanıcının 11 haneli TC kimlik numarası"
-                            },
-
-                            email = new
-                            {
-                                type = "string",
-                                description = "Kullanıcının e-posta adresi"
-                            },
-
-                            motherName = new
-                            {
-                                type = "string",
-                                description = "Kullanıcının anne adı"
-                            },
-
-                            fatherName = new
-                            {
-                                type = "string",
-                                description = "Kullanıcının baba adı"
-                            },
-
-                            birthDate = new
-                            {
-                                type = "string",
-                                description =
-                                    "Kullanıcının doğum tarihi. YYYY-MM-DD formatında."
-                            }
-                        },
-
-                        required = Array.Empty<string>(),
-
-                        additionalProperties = false
-                    }
+                    name = tool.Name,
+                    description = tool.Description,
+                    parameters = tool.Parameters
                 }
-            }
-        };
+            })
+            .ToList();
 
         var requestBody = new
         {
@@ -248,7 +218,7 @@ public class DeepSeekAiProvider : IAiProvider
         }
 
         Console.WriteLine(
-        $"Tool call sayısı: {responseMessage.ToolCalls.Count}");
+            $"Tool call sayısı: {responseMessage.ToolCalls.Count}");
 
         foreach (var toolCall in responseMessage.ToolCalls)
         {
