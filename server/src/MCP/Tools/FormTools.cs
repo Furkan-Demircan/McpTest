@@ -86,6 +86,7 @@ public static class FormTools
         var result = new
         {
             type = "form_patch",
+            target = "studentForm",
             data
         };
 

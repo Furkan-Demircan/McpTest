@@ -20,6 +20,7 @@ export interface AiChatRequest {
 
 export interface AiAction {
   type: string
+  target?: string
   data: Record<string, unknown>
 }
 

@@ -3,10 +3,12 @@ import './AssistantWidget.css'
 import {
   sendAssistantMessage,
   type ChatMessage,
-  type AiAction,
 } from '../services/assistantApi'
 
 import { useFormContext } from '../contexts/useFormContext'
+import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
+import { createFormPatchHandlerRegistry } from '../assistant/actions/formPatchHandlerRegistry'
+import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
 
 interface Message {
   id: string
@@ -39,7 +41,16 @@ export const AssistantWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  
+  const formPatchHandler = createStudentFormHandler(setFormData)
 
+const formPatchHandlerRegistry =
+  createFormPatchHandlerRegistry(formPatchHandler)
+
+const actionHandlerRegistry =
+  createActionHandlerRegistry({
+    formPatchHandler: formPatchHandlerRegistry.handle,
+  })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -71,29 +82,6 @@ export const AssistantWidget: React.FC = () => {
       scrollToBottom()
     }
   }, [messages, isOpen, isTyping])
-
-
-  const handleAiAction = (action: AiAction) => {
-   switch (action.type) {
-    case 'form_patch':{
-      const data = action.data
-
-      setFormData((current) => ({
-        ...current,
-        ...(data.firstName ? { firstName: data.firstName } : {}),
-        ...(data.lastName ? { lastName: data.lastName } : {}),
-        ...(data.tcNo ? { tcNo: data.tcNo.replace(/\D/g, '').slice(0, 11) } : {}),
-        ...(data.email ? { email: data.email } : {}),
-        ...(data.motherName ? { motherName: data.motherName } : {}),
-        ...(data.fatherName ? { fatherName: data.fatherName } : {}),
-        ...(data.birthDate ? { birthDate: data.birthDate } : {}),
-      }))
-      break
-    }
-    default:
-      console.warn(`Unhandled AI action type: ${action.type}`)
-  }
-  }
 
   const handleSendMessage = async (messageText: string) => {
   const trimmedMessage = messageText.trim()
@@ -133,8 +121,8 @@ export const AssistantWidget: React.FC = () => {
     // Tüm conversation history'yi gönder
     const response =
   await sendAssistantMessage(chatMessages, formData)
-
-  response.actions?.forEach(handleAiAction)
+    
+    response.actions?.forEach(actionHandlerRegistry.handle)
 
     const botMessage: Message = {
       id: getNextId(),

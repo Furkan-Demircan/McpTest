@@ -230,6 +230,7 @@ public class AiAssistantService : IAiAssistantService
         return new AiAction
         {
             Type = result.Type,
+            Target = result.Target,
             Data = result.Data
         };
     }
