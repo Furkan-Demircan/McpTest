@@ -7,7 +7,9 @@ public class ToolContextRegistry : IToolContextRegistry
     private static readonly Dictionary<string, AiToolContextType> Contexts =
         new()
         {
-            ["get_form_status"] = AiToolContextType.Form
+            ["get_current_page"] = AiToolContextType.Page,
+            ["get_form_status"] = AiToolContextType.Form,
+            ["fill_student_form"] = AiToolContextType.Form
         };
 
     public AiToolContextType GetContextType(string toolName)

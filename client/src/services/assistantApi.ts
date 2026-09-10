@@ -14,6 +14,7 @@ export interface FormData {
 }
 
 export interface AiChatRequest {
+  currentPage?: string
   messages: ChatMessage[]
   formData: FormData
 }
@@ -32,7 +33,8 @@ interface AiChatResponse {
 
 export async function sendAssistantMessage(
   messages: ChatMessage[],
-  formData: FormData
+  formData: FormData,
+  currentPage?: string
 ): Promise<AiChatResponse> {
   const response = await fetch('/api/assistant/chat', {
     method: 'POST',
@@ -40,6 +42,7 @@ export async function sendAssistantMessage(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      currentPage,
       messages,
       formData,
     }),

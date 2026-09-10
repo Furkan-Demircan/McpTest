@@ -5,9 +5,10 @@ namespace Application.AI;
 public class ToolContextResolver : IToolContextResolver
 {
     public void ApplyContext(
-        AiToolDefinition toolDefinition,
-        Dictionary<string, object?> arguments,
-        Dictionary<string, string?> formData)
+    AiToolDefinition toolDefinition,
+    Dictionary<string, object?> arguments,
+    Dictionary<string, string?> formData,
+    string? currentPage)
     {
         switch (toolDefinition.ContextType)
         {
@@ -15,6 +16,9 @@ public class ToolContextResolver : IToolContextResolver
                 ApplyFormContext(arguments, formData);
                 break;
 
+            case AiToolContextType.Page:
+                arguments["currentPage"] = currentPage;
+                break;
             case AiToolContextType.None:
                 break;
         }

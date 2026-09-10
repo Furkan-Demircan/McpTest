@@ -1,3 +1,4 @@
+using MCP.Server.Models;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 
@@ -6,14 +7,14 @@ namespace MCP.server.Tools;
 [McpServerToolType]
 public static class ApplicationInfoTools
 {
-    [McpServerTool]
-    [Description("Uygulamadaki mevcut sayfa hakkinda bilgi verir.")]
-    public static string GetCurrentPage()
+    [McpServerTool(UseStructuredContent = true)]
+    [Description("Uygulamadaki mevcut sayfa hakkında bilgi verir.")]
+    public static CurrentPageResult GetCurrentPage()
     {
-        return """
-            "type": "information",
-            "page": "/form",
-            "pageName": "Kisisel bilgi formu"
-        """;
+        return new CurrentPageResult
+        {
+            Page = "/form",
+            PageName = "Kişisel bilgi formu"
+        };
     }
 }

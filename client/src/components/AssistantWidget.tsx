@@ -4,6 +4,7 @@ import {
   sendAssistantMessage,
   type ChatMessage,
 } from '../services/assistantApi'
+import {useLocation} from 'react-router-dom'
 
 import { useFormContext } from '../contexts/useFormContext'
 import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
@@ -41,6 +42,7 @@ export const AssistantWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const location = useLocation()
   
   const formPatchHandler = createStudentFormHandler(setFormData)
 
@@ -120,7 +122,7 @@ const actionHandlerRegistry =
 
     // Tüm conversation history'yi gönder
     const response =
-  await sendAssistantMessage(chatMessages, formData)
+  await sendAssistantMessage(chatMessages, formData, location.pathname)
     
     response.actions?.forEach(actionHandlerRegistry.handle)
 

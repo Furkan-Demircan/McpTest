@@ -1,7 +1,9 @@
 using System.Text.Json;
 
 using Application.AI.Contracts;
+
 using Application.Mcp;
+
 using Application.MCP;
 
 namespace Application.AI;
@@ -87,11 +89,14 @@ public class AiAssistantService : IAiAssistantService
                     toolCall,
                     result);
 
-                if (IsUiActionResult(result.Content))
+                if (result.StructuredContent.HasValue)
                 {
-                    var action = CreateAction(result.Content);
+                    var action =
+                        TryCreateAction(
+                            result.StructuredContent.Value);
 
-                    if (IsUiAction(action))
+                    if (action != null &&
+                        IsUiAction(action))
                     {
                         actions.Add(action);
                     }
@@ -100,39 +105,20 @@ public class AiAssistantService : IAiAssistantService
         }
     }
 
-    private static bool IsUiActionResult(string content)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(content);
-
-            return document.RootElement.ValueKind == JsonValueKind.Object
-                && document.RootElement.TryGetProperty(
-                    "type",
-                    out _)
-                && document.RootElement.TryGetProperty(
-                    "data",
-                    out _);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
     private Dictionary<string, object?> BuildToolArguments(
-    AiToolCall toolCall,
-    Dictionary<string, string?> formData,
-    List<AiToolDefinition> tools)
+        AiToolCall toolCall,
+        Dictionary<string, string?> formData,
+        List<AiToolDefinition> tools)
     {
         var arguments =
-            JsonSerializer.Deserialize<Dictionary<string, object?>>(
+            JsonSerializer.Deserialize<
+                Dictionary<string, object?>>(
                 toolCall.Arguments)
             ?? new Dictionary<string, object?>();
 
         var tool =
-            tools.FirstOrDefault(x => x.Name == toolCall.Name);
-
+            tools.FirstOrDefault(
+                x => x.Name == toolCall.Name);
 
         if (tool == null)
         {
@@ -156,6 +142,52 @@ public class AiAssistantService : IAiAssistantService
             AiActionTypes.Navigation => true,
             AiActionTypes.Notification => true,
             _ => false
+        };
+    }
+
+    private static AiAction? TryCreateAction(
+        JsonElement structuredContent)
+    {
+        if (structuredContent.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (!structuredContent.TryGetProperty(
+                "type",
+                out var typeProperty))
+        {
+            return null;
+        }
+
+        if (!structuredContent.TryGetProperty(
+                "data",
+                out var dataProperty))
+        {
+            return null;
+        }
+
+        var type = typeProperty.GetString();
+
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            return null;
+        }
+
+        JsonElement? target = null;
+
+        if (structuredContent.TryGetProperty(
+                "target",
+                out var targetProperty))
+        {
+            target = targetProperty;
+        }
+
+        return new AiAction
+        {
+            Type = type,
+            Target = target?.GetString(),
+            Data = dataProperty
         };
     }
 
@@ -183,55 +215,15 @@ public class AiAssistantService : IAiAssistantService
         AiToolCall toolCall,
         McpToolResult result)
     {
+        var content = result.StructuredContent.HasValue
+            ? result.StructuredContent.Value.GetRawText()
+            : result.Content;
+
         messages.Add(new ChatMessage
         {
             Role = "tool",
             ToolCallId = toolCall.Id,
-            Content = result.Content
+            Content = content
         });
-    }
-
-    private static AiAction CreateAction(
-        string mcpContent)
-    {
-        McpActionResult? result;
-
-        try
-        {
-            result =
-                JsonSerializer.Deserialize<McpActionResult>(
-                    mcpContent);
-        }
-        catch (JsonException ex)
-        {
-            throw new InvalidOperationException(
-                "MCP sonucu geçerli bir action JSON değil.",
-                ex);
-        }
-
-        if (result == null)
-        {
-            throw new InvalidOperationException(
-                "MCP sonucu boş.");
-        }
-
-        if (string.IsNullOrWhiteSpace(result.Type))
-        {
-            throw new InvalidOperationException(
-                "MCP action type bilgisi bulunamadı.");
-        }
-
-        if (result.Data.ValueKind == JsonValueKind.Undefined)
-        {
-            throw new InvalidOperationException(
-                $"MCP action '{result.Type}' için data bilgisi bulunamadı.");
-        }
-
-        return new AiAction
-        {
-            Type = result.Type,
-            Target = result.Target,
-            Data = result.Data
-        };
     }
 }
