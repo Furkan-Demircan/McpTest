@@ -18,18 +18,15 @@ export interface AiChatRequest {
   formData: FormData
 }
 
-export interface AiChatResponse {
+export interface AiAction {
+  type: string
+  data: Record<string, unknown>
+}
+
+interface AiChatResponse {
   message: string
-  formPatch: {
-    firstName?: string
-    lastName?: string
-    tcNo?: string
-    email?: string
-    motherName?: string
-    fatherName?: string
-    birthDate?: string
-  }
   missingFields: string[]
+  actions: AiAction[]
 }
 
 export async function sendAssistantMessage(

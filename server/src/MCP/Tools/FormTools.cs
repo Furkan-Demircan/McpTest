@@ -13,6 +13,7 @@ public static class FormTools
     {
         return """
         {
+            "type": "information",
             "form": "student",
             "fields": [
                 {
@@ -71,7 +72,7 @@ public static class FormTools
     string? fatherName = null,
     string? birthDate = null)
     {
-        var result = new
+        var data = new
         {
             firstName,
             lastName,
@@ -80,6 +81,12 @@ public static class FormTools
             motherName,
             fatherName,
             birthDate = NormalizeBirthDate(birthDate)
+        };
+
+        var result = new
+        {
+            type = "form_patch",
+            data
         };
 
         return JsonSerializer.Serialize(result);

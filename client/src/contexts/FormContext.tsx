@@ -5,13 +5,13 @@ import {
 } from 'react'
 
 export interface FormData {
-  ad: string
-  soyad: string
+  firstName: string
+  lastName: string
   tcNo: string
   email: string
-  anneAdi: string
-  babaAdi: string
-  dogumTarihi: string
+  motherName: string
+  fatherName: string
+  birthDate: string
 }
 
 export interface FormContextType {
@@ -20,13 +20,13 @@ export interface FormContextType {
 }
 
 export const initialFormData: FormData = {
-  ad: '',
-  soyad: '',
+  firstName: '',
+  lastName: '',
   tcNo: '',
   email: '',
-  anneAdi: '',
-  babaAdi: '',
-  dogumTarihi: '',
+  motherName: '',
+  fatherName: '',
+  birthDate: '',
 }
 
 export const FormContext =

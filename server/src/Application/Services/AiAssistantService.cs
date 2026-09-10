@@ -1,5 +1,6 @@
 using System.Text.Json;
-
+using Application.AI.Contracts;
+using Application.Mcp;
 using Application.MCP;
 
 namespace Application.AI;
@@ -28,6 +29,8 @@ public class AiAssistantService : IAiAssistantService
         var messages = new List<ChatMessage>(
             request.Messages);
 
+        var actions = new List<AiAction>();
+
         while (true)
         {
             var aiRequest = new AiRequest
@@ -46,99 +49,175 @@ public class AiAssistantService : IAiAssistantService
             {
                 return new AiChatResponse
                 {
-                    Message = response.Content ?? string.Empty
+                    Message = response.Content ?? string.Empty,
+                    Actions = actions
                 };
             }
 
-            // DeepSeek'in yaptığı TÜM tool çağrılarını
-            // tek bir assistant mesajı olarak ekliyoruz.
-            var assistantMessage = new ChatMessage
-            {
-                Role = "assistant",
-                Content = response.Content,
-                ToolCalls = response.ToolCalls
-                    .Select(toolCall => new AiToolCall
-                    {
-                        Id = toolCall.Id,
-                        Name = toolCall.Name,
-                        Arguments = toolCall.Arguments
-                    })
-                    .ToList()
-            };
-
-            messages.Add(assistantMessage);
+            AddAssistantToolCallMessage(
+                messages,
+                response);
 
             foreach (var toolCall in response.ToolCalls)
             {
-                var argumentsDictionary =
-                    JsonSerializer.Deserialize<
-                        Dictionary<string, object?>>(
-                        toolCall.Arguments)
-                    ?? new Dictionary<string, object?>();
+                var arguments =
+                    BuildToolArguments(
+                        toolCall,
+                        request.FormData,
+                        tools);
 
-                // Form durumunu MCP tool'una aktar.
-                if (toolCall.Name == "get_form_status")
-                {
-                    foreach (var formField in request.FormData)
-                    {
-                        argumentsDictionary[formField.Key] =
-                            formField.Value;
-                    }
-                }
-
-                var mcpResult =
+                var result =
                     await _mcpClientService.CallToolAsync(
                         toolCall.Name,
-                        argumentsDictionary,
+                        arguments,
                         cancellationToken);
 
-                Console.WriteLine(
-                    $"MCP TOOL: {toolCall.Name}");
-
-                Console.WriteLine(
-                    $"MCP RESULT: {mcpResult.Content}");
-
-                if (mcpResult.IsError)
+                if (result.IsError)
                 {
                     throw new InvalidOperationException(
-                        $"MCP tool hatası: {mcpResult.Content}");
+                        $"MCP tool hatası: {result.Content}");
                 }
 
-                // MCP sonucunu conversation'a ekliyoruz.
-                messages.Add(new ChatMessage
-                {
-                    Role = "tool",
-                    ToolCallId = toolCall.Id,
-                    Content = mcpResult.Content
-                });
+                AddToolResultMessage(
+                    messages,
+                    toolCall,
+                    result);
 
-                // Form doldurma tool'u çalıştıysa
-                // sonucu React'e formPatch olarak gönder.
-                if (toolCall.Name == "fill_student_form")
+                var action = CreateAction(result.Content);
+
+                if (IsUiAction(action))
                 {
-                    return CreateFormResponse(
-                        mcpResult.Content,
-                        request.FormData);
+                    actions.Add(action);
                 }
             }
         }
     }
 
-    private static AiChatResponse CreateFormResponse(
-        string mcpContent,
-        Dictionary<string, string?> currentFormData)
+    private static bool IsUiAction(AiAction action)
     {
-        var formPatch =
-            JsonSerializer.Deserialize<
-                Dictionary<string, string?>>(
-                mcpContent)
-            ?? new Dictionary<string, string?>();
-
-        return new AiChatResponse
+        return action.Type switch
         {
-            Message = "Form bilgileri güncellendi.",
-            FormPatch = formPatch,
-            MissingFields = []
+            AiActionTypes.FormPatch => true,
+            AiActionTypes.Navigation => true,
+            AiActionTypes.Notification => true,
+            _ => false
         };
+    }
+
+    private static void AddAssistantToolCallMessage(
+        List<ChatMessage> messages,
+        AiResponse response)
+    {
+        messages.Add(new ChatMessage
+        {
+            Role = "assistant",
+            Content = response.Content,
+            ToolCalls = response.ToolCalls
+                .Select(toolCall => new AiToolCall
+                {
+                    Id = toolCall.Id,
+                    Name = toolCall.Name,
+                    Arguments = toolCall.Arguments
+                })
+                .ToList()
+        });
+    }
+
+    private static void AddToolResultMessage(
+        List<ChatMessage> messages,
+        AiToolCall toolCall,
+        McpToolResult result)
+    {
+        messages.Add(new ChatMessage
+        {
+            Role = "tool",
+            ToolCallId = toolCall.Id,
+            Content = result.Content
+        });
+    }
+
+    private static AiAction CreateAction(string mcpContent)
+    {
+        McpActionResult? result;
+
+        try
+        {
+            result =
+                JsonSerializer.Deserialize<McpActionResult>(
+                    mcpContent);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException(
+                "MCP sonucu geçerli bir action JSON değil.",
+                ex);
+        }
+
+        if (result == null)
+        {
+            throw new InvalidOperationException(
+                "MCP sonucu boş.");
+        }
+
+        if (string.IsNullOrWhiteSpace(result.Type))
+        {
+            throw new InvalidOperationException(
+                "MCP action type bilgisi bulunamadı.");
+        }
+
+        if (result.Data.ValueKind == JsonValueKind.Undefined)
+        {
+            throw new InvalidOperationException(
+                $"MCP action '{result.Type}' için data bilgisi bulunamadı.");
+        }
+
+        return new AiAction
+        {
+            Type = result.Type,
+            Data = result.Data
+        };
+    }
+
+    private static Dictionary<string, object?> BuildToolArguments(
+        AiToolCall toolCall,
+        Dictionary<string, string?> formData,
+        List<AiToolDefinition> tools)
+    {
+        var arguments =
+            JsonSerializer.Deserialize<
+                Dictionary<string, object?>>(
+                toolCall.Arguments)
+            ?? new Dictionary<string, object?>();
+
+        var tool = tools.FirstOrDefault(
+            x => x.Name == toolCall.Name);
+
+        if (tool == null)
+            return arguments;
+
+        var parametersJson =
+            JsonSerializer.SerializeToElement(
+                tool.Parameters);
+
+        if (!parametersJson.TryGetProperty(
+                "properties",
+                out var properties))
+        {
+            return arguments;
+        }
+
+        foreach (var property in properties.EnumerateObject())
+        {
+            var fieldName = property.Name;
+
+            if (formData.TryGetValue(
+                    fieldName,
+                    out var value))
+            {
+                arguments[fieldName] = value;
+            }
+        }
+
+        return arguments;
     }
 }

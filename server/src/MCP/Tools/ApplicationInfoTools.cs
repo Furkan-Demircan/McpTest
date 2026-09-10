@@ -11,6 +11,7 @@ public static class ApplicationInfoTools
     public static string GetCurrentPage()
     {
         return """
+            "type": "information",
             "page": "/form",
             "pageName": "Kisisel bilgi formu"
         """;

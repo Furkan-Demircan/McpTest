@@ -13,7 +13,6 @@ public static class DependencyInjection
     {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<StudentFormValidator>();
-        services.AddScoped<FillStudentFormHandler>();
         services.AddScoped<IAiAssistantService, AiAssistantService>();
         return services;
     }

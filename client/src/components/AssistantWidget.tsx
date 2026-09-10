@@ -71,6 +71,29 @@ export const AssistantWidget: React.FC = () => {
     }
   }, [messages, isOpen, isTyping])
 
+
+  const handleAiAction = (action) => {
+   switch (action.type) {
+    case 'form-patch':{
+      const data = action.data
+
+      setFormData((current) => ({
+        ...current,
+        ...(data.firstName ? { ad: data.firstName } : {}),
+        ...(data.lastName ? { soyad: data.lastName } : {}),
+        ...(data.tcNo ? { tcNo: data.tcNo.replace(/\D/g, '').slice(0, 11) } : {}),
+        ...(data.email ? { email: data.email } : {}),
+        ...(data.motherName ? { anneAdi: data.motherName } : {}),
+        ...(data.fatherName ? { babaAdi: data.fatherName } : {}),
+        ...(data.birthDate ? { dogumTarihi: data.birthDate } : {}),
+      }))
+      break
+    }
+    default:
+      console.warn(`Unhandled AI action type: ${action.type}`)
+  }
+  }
+
   const handleSendMessage = async (messageText: string) => {
   const trimmedMessage = messageText.trim()
 
@@ -109,40 +132,6 @@ export const AssistantWidget: React.FC = () => {
     // Tüm conversation history'yi gönder
     const response =
   await sendAssistantMessage(chatMessages, formData)
-
-if (response.formPatch && Object.keys(response.formPatch).length > 0) {
-  setFormData((current) => ({
-    ...current,
-
-    ...(response.formPatch.firstName ? {
-      ad: response.formPatch.firstName,
-    } : {}),
-
-    ...(response.formPatch.lastName ? {
-      soyad: response.formPatch.lastName,
-    } : {}),
-
-    ...(response.formPatch.tcNo ? {
-      tcNo: response.formPatch.tcNo.replace(/\D/g, '').slice(0, 11),
-    } : {}),
-
-    ...(response.formPatch.email ? {
-      email: response.formPatch.email,
-    } : {}),
-
-    ...(response.formPatch.motherName ? {
-      anneAdi: response.formPatch.motherName,
-    } : {}),
-
-    ...(response.formPatch.fatherName ? {
-      babaAdi: response.formPatch.fatherName,
-    } : {}),
-
-    ...(response.formPatch.birthDate ? {
-      dogumTarihi: response.formPatch.birthDate,
-    } : {}),
-  }))
-}
 
     const botMessage: Message = {
       id: getNextId(),
