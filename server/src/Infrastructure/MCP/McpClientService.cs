@@ -9,10 +9,12 @@ namespace Infrastructure.MCP;
 public class McpClientService : IMcpClientService
 {
     private readonly McpClient _client;
+    private readonly IToolContextRegistry _toolContextRegistry;
 
-    public McpClientService(McpClient client)
+    public McpClientService(McpClient client, IToolContextRegistry toolContextRegistry)
     {
         _client = client;
+        _toolContextRegistry = toolContextRegistry;
     }
 
     public async Task<List<AiToolDefinition>> GetToolDefinitionsAsync(
@@ -22,13 +24,14 @@ public class McpClientService : IMcpClientService
             cancellationToken: cancellationToken);
 
         return tools
-            .Select(tool => new AiToolDefinition
-            {
-                Name = tool.Name,
-                Description = tool.Description ?? string.Empty,
-                Parameters = tool.JsonSchema
-            })
-            .ToList();
+    .Select(tool => new AiToolDefinition
+    {
+        Name = tool.Name,
+        Description = tool.Description ?? string.Empty,
+        Parameters = tool.JsonSchema,
+        ContextType = _toolContextRegistry.GetContextType(tool.Name)
+    })
+    .ToList();
     }
 
     public async Task<McpToolResult> CallToolAsync(

@@ -3,6 +3,7 @@ import './AssistantWidget.css'
 import {
   sendAssistantMessage,
   type ChatMessage,
+  type AiAction,
 } from '../services/assistantApi'
 
 import { useFormContext } from '../contexts/useFormContext'
@@ -72,20 +73,20 @@ export const AssistantWidget: React.FC = () => {
   }, [messages, isOpen, isTyping])
 
 
-  const handleAiAction = (action) => {
+  const handleAiAction = (action: AiAction) => {
    switch (action.type) {
-    case 'form-patch':{
+    case 'form_patch':{
       const data = action.data
 
       setFormData((current) => ({
         ...current,
-        ...(data.firstName ? { ad: data.firstName } : {}),
-        ...(data.lastName ? { soyad: data.lastName } : {}),
+        ...(data.firstName ? { firstName: data.firstName } : {}),
+        ...(data.lastName ? { lastName: data.lastName } : {}),
         ...(data.tcNo ? { tcNo: data.tcNo.replace(/\D/g, '').slice(0, 11) } : {}),
         ...(data.email ? { email: data.email } : {}),
-        ...(data.motherName ? { anneAdi: data.motherName } : {}),
-        ...(data.fatherName ? { babaAdi: data.fatherName } : {}),
-        ...(data.birthDate ? { dogumTarihi: data.birthDate } : {}),
+        ...(data.motherName ? { motherName: data.motherName } : {}),
+        ...(data.fatherName ? { fatherName: data.fatherName } : {}),
+        ...(data.birthDate ? { birthDate: data.birthDate } : {}),
       }))
       break
     }
@@ -132,6 +133,8 @@ export const AssistantWidget: React.FC = () => {
     // Tüm conversation history'yi gönder
     const response =
   await sendAssistantMessage(chatMessages, formData)
+
+  response.actions?.forEach(handleAiAction)
 
     const botMessage: Message = {
       id: getNextId(),

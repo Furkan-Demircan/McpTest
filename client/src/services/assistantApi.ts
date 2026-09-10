@@ -4,13 +4,13 @@ export interface ChatMessage {
 }
 
 export interface FormData {
-  ad: string
-  soyad: string
+  firstName: string
+  lastName: string
   tcNo: string
   email: string
-  anneAdi: string
-  babaAdi: string
-  dogumTarihi: string
+  motherName: string
+  fatherName: string
+  birthDate: string
 }
 
 export interface AiChatRequest {

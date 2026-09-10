@@ -7,10 +7,10 @@ public class StudentFormValidator
     {
         var missingFields = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("ad")))
+        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("firstName")))
             missingFields.Add("firstName");
 
-        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("soyad")))
+        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("lastName")))
             missingFields.Add("lastName");
 
         if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("tcNo")))
@@ -19,13 +19,13 @@ public class StudentFormValidator
         if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("email")))
             missingFields.Add("email");
 
-        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("anneAdi")))
+        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("motherName")))
             missingFields.Add("motherName");
 
-        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("babaAdi")))
+        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("fatherName")))
             missingFields.Add("fatherName");
 
-        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("dogumTarihi")))
+        if (string.IsNullOrWhiteSpace(formData.GetValueOrDefault("birthDate")))
             missingFields.Add("birthDate");
 
         return missingFields;

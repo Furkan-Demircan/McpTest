@@ -1,4 +1,5 @@
 using System.Text.Json;
+
 using Application.AI.Contracts;
 using Application.Mcp;
 using Application.MCP;
@@ -9,13 +10,16 @@ public class AiAssistantService : IAiAssistantService
 {
     private readonly IAiProvider _aiProvider;
     private readonly IMcpClientService _mcpClientService;
+    private readonly IToolContextResolver _toolContextResolver;
 
     public AiAssistantService(
         IAiProvider aiProvider,
-        IMcpClientService mcpClientService)
+        IMcpClientService mcpClientService,
+        IToolContextResolver toolContextResolver)
     {
         _aiProvider = aiProvider;
         _mcpClientService = mcpClientService;
+        _toolContextResolver = toolContextResolver;
     }
 
     public async Task<AiChatResponse> ChatAsync(
@@ -83,17 +87,68 @@ public class AiAssistantService : IAiAssistantService
                     toolCall,
                     result);
 
-                var action = CreateAction(result.Content);
-
-                if (IsUiAction(action))
+                if (IsUiActionResult(result.Content))
                 {
-                    actions.Add(action);
+                    var action = CreateAction(result.Content);
+
+                    if (IsUiAction(action))
+                    {
+                        actions.Add(action);
+                    }
                 }
             }
         }
     }
 
-    private static bool IsUiAction(AiAction action)
+    private static bool IsUiActionResult(string content)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(content);
+
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty(
+                    "type",
+                    out _)
+                && document.RootElement.TryGetProperty(
+                    "data",
+                    out _);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private Dictionary<string, object?> BuildToolArguments(
+    AiToolCall toolCall,
+    Dictionary<string, string?> formData,
+    List<AiToolDefinition> tools)
+    {
+        var arguments =
+            JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                toolCall.Arguments)
+            ?? new Dictionary<string, object?>();
+
+        var tool =
+            tools.FirstOrDefault(x => x.Name == toolCall.Name);
+
+
+        if (tool == null)
+        {
+            return arguments;
+        }
+
+        _toolContextResolver.ApplyContext(
+            tool,
+            arguments,
+            formData);
+
+        return arguments;
+    }
+
+    private static bool IsUiAction(
+        AiAction action)
     {
         return action.Type switch
         {
@@ -136,7 +191,8 @@ public class AiAssistantService : IAiAssistantService
         });
     }
 
-    private static AiAction CreateAction(string mcpContent)
+    private static AiAction CreateAction(
+        string mcpContent)
     {
         McpActionResult? result;
 
@@ -176,48 +232,5 @@ public class AiAssistantService : IAiAssistantService
             Type = result.Type,
             Data = result.Data
         };
-    }
-
-    private static Dictionary<string, object?> BuildToolArguments(
-        AiToolCall toolCall,
-        Dictionary<string, string?> formData,
-        List<AiToolDefinition> tools)
-    {
-        var arguments =
-            JsonSerializer.Deserialize<
-                Dictionary<string, object?>>(
-                toolCall.Arguments)
-            ?? new Dictionary<string, object?>();
-
-        var tool = tools.FirstOrDefault(
-            x => x.Name == toolCall.Name);
-
-        if (tool == null)
-            return arguments;
-
-        var parametersJson =
-            JsonSerializer.SerializeToElement(
-                tool.Parameters);
-
-        if (!parametersJson.TryGetProperty(
-                "properties",
-                out var properties))
-        {
-            return arguments;
-        }
-
-        foreach (var property in properties.EnumerateObject())
-        {
-            var fieldName = property.Name;
-
-            if (formData.TryGetValue(
-                    fieldName,
-                    out var value))
-            {
-                arguments[fieldName] = value;
-            }
-        }
-
-        return arguments;
     }
 }

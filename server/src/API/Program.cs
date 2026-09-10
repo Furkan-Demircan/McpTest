@@ -1,5 +1,6 @@
 using API.Middlewares;
 using Application;
+using Application.AI;
 using Application.MCP;
 using Infrastructure;
 using Infrastructure.MCP;
@@ -11,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Katman Bağımlılıkları (Clean Architecture DI)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
 
 // MCP Client Yapılandırması
 var mcpServerUrl = builder.Configuration["Mcp:ServerUrl"]
@@ -30,7 +32,8 @@ builder.Services.AddSingleton<McpClient>(sp =>
         .GetAwaiter()
         .GetResult();
 });
-
+builder.Services.AddSingleton<IToolContextRegistry, ToolContextRegistry>();
+builder.Services.AddSingleton<IToolContextResolver, ToolContextResolver>();
 builder.Services.AddScoped<IMcpClientService, McpClientService>();
 builder.Services.AddScoped<McpClientService>();
 
