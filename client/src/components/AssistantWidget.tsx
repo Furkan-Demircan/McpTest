@@ -4,8 +4,14 @@ import {
   sendAssistantMessage,
   type ChatMessage,
 } from '../services/assistantApi'
+import {useNavigate,useLocation} from 'react-router-dom'
+
 
 import { useFormContext } from '../contexts/useFormContext'
+import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
+import { createFormPatchHandlerRegistry } from '../assistant/actions/formPatchHandlerRegistry'
+import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
+import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 
 interface Message {
   id: string
@@ -38,7 +44,21 @@ export const AssistantWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
 
+  const navigationHandler = createNavigationHandler(navigate)
+  
+  const formPatchHandler = createStudentFormHandler(setFormData)
+
+const formPatchHandlerRegistry =
+  createFormPatchHandlerRegistry(formPatchHandler)
+
+const actionHandlerRegistry =
+  createActionHandlerRegistry({
+    formPatchHandler: formPatchHandlerRegistry.handle,
+    navigationHandler,
+  })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -108,41 +128,12 @@ export const AssistantWidget: React.FC = () => {
 
     // Tüm conversation history'yi gönder
     const response =
-  await sendAssistantMessage(chatMessages, formData)
-
-if (response.formPatch && Object.keys(response.formPatch).length > 0) {
-  setFormData((current) => ({
-    ...current,
-
-    ...(response.formPatch.firstName ? {
-      ad: response.formPatch.firstName,
-    } : {}),
-
-    ...(response.formPatch.lastName ? {
-      soyad: response.formPatch.lastName,
-    } : {}),
-
-    ...(response.formPatch.tcNo ? {
-      tcNo: response.formPatch.tcNo.replace(/\D/g, '').slice(0, 11),
-    } : {}),
-
-    ...(response.formPatch.email ? {
-      email: response.formPatch.email,
-    } : {}),
-
-    ...(response.formPatch.motherName ? {
-      anneAdi: response.formPatch.motherName,
-    } : {}),
-
-    ...(response.formPatch.fatherName ? {
-      babaAdi: response.formPatch.fatherName,
-    } : {}),
-
-    ...(response.formPatch.birthDate ? {
-      dogumTarihi: response.formPatch.birthDate,
-    } : {}),
-  }))
-}
+  await sendAssistantMessage(chatMessages, formData, location.pathname)
+    
+    response.actions?.forEach((action) => {
+  console.log('AI Action:', action)
+  actionHandlerRegistry.handle(action)
+})
 
     const botMessage: Message = {
       id: getNextId(),

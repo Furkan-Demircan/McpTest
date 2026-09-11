@@ -1,5 +1,9 @@
 using System.Text.Json;
 
+using Application.AI.Contracts;
+
+using Application.Mcp;
+
 using Application.MCP;
 
 namespace Application.AI;
@@ -8,13 +12,16 @@ public class AiAssistantService : IAiAssistantService
 {
     private readonly IAiProvider _aiProvider;
     private readonly IMcpClientService _mcpClientService;
+    private readonly IToolContextResolver _toolContextResolver;
 
     public AiAssistantService(
         IAiProvider aiProvider,
-        IMcpClientService mcpClientService)
+        IMcpClientService mcpClientService,
+        IToolContextResolver toolContextResolver)
     {
         _aiProvider = aiProvider;
         _mcpClientService = mcpClientService;
+        _toolContextResolver = toolContextResolver;
     }
 
     public async Task<AiChatResponse> ChatAsync(
@@ -27,6 +34,8 @@ public class AiAssistantService : IAiAssistantService
 
         var messages = new List<ChatMessage>(
             request.Messages);
+
+        var actions = new List<AiAction>();
 
         while (true)
         {
@@ -46,99 +55,179 @@ public class AiAssistantService : IAiAssistantService
             {
                 return new AiChatResponse
                 {
-                    Message = response.Content ?? string.Empty
+                    Message = response.Content ?? string.Empty,
+                    Actions = actions
                 };
             }
 
-            // DeepSeek'in yaptığı TÜM tool çağrılarını
-            // tek bir assistant mesajı olarak ekliyoruz.
-            var assistantMessage = new ChatMessage
-            {
-                Role = "assistant",
-                Content = response.Content,
-                ToolCalls = response.ToolCalls
-                    .Select(toolCall => new AiToolCall
-                    {
-                        Id = toolCall.Id,
-                        Name = toolCall.Name,
-                        Arguments = toolCall.Arguments
-                    })
-                    .ToList()
-            };
-
-            messages.Add(assistantMessage);
+            AddAssistantToolCallMessage(
+                messages,
+                response);
 
             foreach (var toolCall in response.ToolCalls)
             {
-                var argumentsDictionary =
-                    JsonSerializer.Deserialize<
-                        Dictionary<string, object?>>(
-                        toolCall.Arguments)
-                    ?? new Dictionary<string, object?>();
+                var arguments =
+                    BuildToolArguments(
+                        toolCall,
+                        request.FormData,
+                        request.CurrentPage,
+                        tools);
 
-                // Form durumunu MCP tool'una aktar.
-                if (toolCall.Name == "get_form_status")
-                {
-                    foreach (var formField in request.FormData)
-                    {
-                        argumentsDictionary[formField.Key] =
-                            formField.Value;
-                    }
-                }
-
-                var mcpResult =
+                var result =
                     await _mcpClientService.CallToolAsync(
                         toolCall.Name,
-                        argumentsDictionary,
+                        arguments,
                         cancellationToken);
 
-                Console.WriteLine(
-                    $"MCP TOOL: {toolCall.Name}");
-
-                Console.WriteLine(
-                    $"MCP RESULT: {mcpResult.Content}");
-
-                if (mcpResult.IsError)
+                if (result.IsError)
                 {
                     throw new InvalidOperationException(
-                        $"MCP tool hatası: {mcpResult.Content}");
+                        $"MCP tool hatası: {result.Content}");
                 }
 
-                // MCP sonucunu conversation'a ekliyoruz.
-                messages.Add(new ChatMessage
-                {
-                    Role = "tool",
-                    ToolCallId = toolCall.Id,
-                    Content = mcpResult.Content
-                });
+                AddToolResultMessage(
+                    messages,
+                    toolCall,
+                    result);
 
-                // Form doldurma tool'u çalıştıysa
-                // sonucu React'e formPatch olarak gönder.
-                if (toolCall.Name == "fill_student_form")
+                if (result.StructuredContent.HasValue)
                 {
-                    return CreateFormResponse(
-                        mcpResult.Content,
-                        request.FormData);
+                    var action =
+                        TryCreateAction(
+                            result.StructuredContent.Value);
+
+                    if (action != null &&
+                        IsUiAction(action))
+                    {
+                        actions.Add(action);
+                    }
                 }
             }
         }
     }
 
-    private static AiChatResponse CreateFormResponse(
-        string mcpContent,
-        Dictionary<string, string?> currentFormData)
+    private Dictionary<string, object?> BuildToolArguments(
+        AiToolCall toolCall,
+        Dictionary<string, string?> formData,
+        string? currentPage,
+        List<AiToolDefinition> tools
+        )
     {
-        var formPatch =
+        var arguments =
             JsonSerializer.Deserialize<
-                Dictionary<string, string?>>(
-                mcpContent)
-            ?? new Dictionary<string, string?>();
+                Dictionary<string, object?>>(
+                toolCall.Arguments)
+            ?? new Dictionary<string, object?>();
 
-        return new AiChatResponse
+        var tool =
+            tools.FirstOrDefault(
+                x => x.Name == toolCall.Name);
+
+        if (tool == null)
         {
-            Message = "Form bilgileri güncellendi.",
-            FormPatch = formPatch,
-            MissingFields = []
+            return arguments;
+        }
+
+        _toolContextResolver.ApplyContext(
+            tool,
+            arguments,
+            formData,
+            currentPage);
+
+        return arguments;
+    }
+
+    private static bool IsUiAction(
+        AiAction action)
+    {
+        return action.Type switch
+        {
+            AiActionTypes.FormPatch => true,
+            AiActionTypes.Navigation => true,
+            AiActionTypes.Notification => true,
+            _ => false
         };
+    }
+
+    private static AiAction? TryCreateAction(
+        JsonElement structuredContent)
+    {
+        if (structuredContent.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (!structuredContent.TryGetProperty(
+                "type",
+                out var typeProperty))
+        {
+            return null;
+        }
+
+        if (!structuredContent.TryGetProperty(
+                "data",
+                out var dataProperty))
+        {
+            return null;
+        }
+
+        var type = typeProperty.GetString();
+
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            return null;
+        }
+
+        JsonElement? target = null;
+
+        if (structuredContent.TryGetProperty(
+                "target",
+                out var targetProperty))
+        {
+            target = targetProperty;
+        }
+
+        return new AiAction
+        {
+            Type = type,
+            Target = target?.GetString(),
+            Data = dataProperty
+        };
+    }
+
+    private static void AddAssistantToolCallMessage(
+        List<ChatMessage> messages,
+        AiResponse response)
+    {
+        messages.Add(new ChatMessage
+        {
+            Role = "assistant",
+            Content = response.Content,
+            ToolCalls = response.ToolCalls
+                .Select(toolCall => new AiToolCall
+                {
+                    Id = toolCall.Id,
+                    Name = toolCall.Name,
+                    Arguments = toolCall.Arguments
+                })
+                .ToList()
+        });
+    }
+
+    private static void AddToolResultMessage(
+        List<ChatMessage> messages,
+        AiToolCall toolCall,
+        McpToolResult result)
+    {
+        var content = result.StructuredContent.HasValue
+            ? result.StructuredContent.Value.GetRawText()
+            : result.Content;
+
+        messages.Add(new ChatMessage
+        {
+            Role = "tool",
+            ToolCallId = toolCall.Id,
+            Content = content
+        });
     }
 }

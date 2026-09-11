@@ -1,6 +1,15 @@
-namespace Application.AI.Tools;
+namespace MCP.Server.Models;
 
-public class FillStudentFormArguments
+public class FormPatchResult
+{
+    public string Type { get; set; } = "form_patch";
+
+    public string Target { get; set; } = "studentForm";
+
+    public FormPatchData Data { get; set; } = new();
+}
+
+public class FormPatchData
 {
     public string? FirstName { get; set; }
 

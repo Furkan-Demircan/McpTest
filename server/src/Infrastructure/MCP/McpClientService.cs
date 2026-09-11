@@ -9,10 +9,14 @@ namespace Infrastructure.MCP;
 public class McpClientService : IMcpClientService
 {
     private readonly McpClient _client;
+    private readonly IToolContextRegistry _toolContextRegistry;
 
-    public McpClientService(McpClient client)
+    public McpClientService(
+        McpClient client,
+        IToolContextRegistry toolContextRegistry)
     {
         _client = client;
+        _toolContextRegistry = toolContextRegistry;
     }
 
     public async Task<List<AiToolDefinition>> GetToolDefinitionsAsync(
@@ -26,7 +30,9 @@ public class McpClientService : IMcpClientService
             {
                 Name = tool.Name,
                 Description = tool.Description ?? string.Empty,
-                Parameters = tool.JsonSchema
+                Parameters = tool.JsonSchema,
+                ContextType =
+                    _toolContextRegistry.GetContextType(tool.Name)
             })
             .ToList();
     }
@@ -50,6 +56,7 @@ public class McpClientService : IMcpClientService
         return new McpToolResult
         {
             Content = text,
+            StructuredContent = result.StructuredContent,
             IsError = result.IsError ?? false
         };
     }

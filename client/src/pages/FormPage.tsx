@@ -47,19 +47,19 @@ const { formData, setFormData } = useFormContext()
   const validate = (): boolean => {
     const newErrors: FormErrors = {}
 
-    const ad = (formData.ad || '').trim()
-    const soyad = (formData.soyad || '').trim()
+    const firstName = (formData.firstName || '').trim()
+    const lastName = (formData.lastName || '').trim()
     const tcNo = (formData.tcNo || '').trim()
     const email = (formData.email || '').trim()
-    const anneAdi = (formData.anneAdi || '').trim()
-    const babaAdi = (formData.babaAdi || '').trim()
-    const dogumTarihi = (formData.dogumTarihi || '').trim()
+    const motherName = (formData.motherName || '').trim()
+    const fatherName = (formData.fatherName || '').trim()
+    const birthDate = (formData.birthDate || '').trim()
 
-    if (!ad) {
-      newErrors.ad = 'Ad alanı zorunludur.'
+    if (!firstName) {
+      newErrors.firstName = 'Ad alanı zorunludur.'
     }
-    if (!soyad) {
-      newErrors.soyad = 'Soyad alanı zorunludur.'
+    if (!lastName) {
+      newErrors.lastName  = 'Soyad alanı zorunludur.'
     }
 
     if (!tcNo) {
@@ -75,16 +75,16 @@ const { formData, setFormData } = useFormContext()
       newErrors.email = 'Geçerli bir e-posta adresi giriniz.'
     }
 
-    if (!anneAdi) {
-      newErrors.anneAdi = 'Anne adı zorunludur.'
+    if (!motherName) {
+      newErrors.motherName = 'Anne adı zorunludur.'
     }
 
-    if (!babaAdi) {
-      newErrors.babaAdi = 'Baba adı zorunludur.'
+    if (!fatherName) {
+      newErrors.fatherName = 'Baba adı zorunludur.'
     }
 
-    if (!dogumTarihi) {
-      newErrors.dogumTarihi = 'Doğum tarihi seçimi zorunludur.'
+    if (!birthDate) {
+      newErrors.birthDate = 'Doğum tarihi seçimi zorunludur.'
     }
 
     setErrors(newErrors)
@@ -105,13 +105,13 @@ const { formData, setFormData } = useFormContext()
     try {
       // Backend'e HTTP POST isteği
       const result = await api.createUser({
-        firstName: (formData.ad || '').trim(),
-        lastName: (formData.soyad || '').trim(),
+        firstName: (formData.firstName || '').trim(),
+        lastName: (formData.lastName   || '').trim(),
         tcNo: (formData.tcNo || '').trim(),
         email: (formData.email || '').trim(),
-        motherName: (formData.anneAdi || '').trim(),
-        fatherName: (formData.babaAdi || '').trim(),
-        birthDate: formData.dogumTarihi || '',
+        motherName: (formData.motherName || '').trim(),
+        fatherName: (formData.fatherName || '').trim(),
+        birthDate: formData.birthDate || '',
       })
 
       setSavedUser(result)
@@ -218,37 +218,37 @@ const { formData, setFormData } = useFormContext()
         <form className="user-form" onSubmit={handleSubmit} noValidate>
           <div className="form-grid">
             {/* Ad */}
-            <div className={`form-group ${errors.ad ? 'has-error' : ''}`}>
-              <label htmlFor="ad">
+            <div className={`form-group ${errors.firstName ? 'has-error' : ''}`}>
+              <label htmlFor="firstName">
                 Ad <span className="required-star">*</span>
               </label>
               <input
-                id="ad"
+                id="firstName"
                 type="text"
-                name="ad"
+                name="firstName"
                 placeholder="Örn: Ahmet"
-                value={formData.ad || ''}
+                value={formData.firstName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
-              {errors.ad && <span className="error-text">{errors.ad}</span>}
+              {errors.firstName && <span className="error-text">{errors.firstName}</span>}
             </div>
 
             {/* Soyad */}
-            <div className={`form-group ${errors.soyad ? 'has-error' : ''}`}>
-              <label htmlFor="soyad">
+            <div className={`form-group ${errors.lastName ? 'has-error' : ''}`}>
+              <label htmlFor="lastName">
                 Soyad <span className="required-star">*</span>
               </label>
               <input
-                id="soyad"
+                id="lastName"
                 type="text"
-                name="soyad"
+                name="lastName"
                 placeholder="Örn: Yılmaz"
-                value={formData.soyad || ''}
+                value={formData.lastName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
-              {errors.soyad && <span className="error-text">{errors.soyad}</span>}
+              {errors.lastName && <span className="error-text">{errors.lastName}</span>}
             </div>
 
             {/* TC No */}
@@ -287,53 +287,53 @@ const { formData, setFormData } = useFormContext()
             </div>
 
             {/* Anne Adı */}
-            <div className={`form-group ${errors.anneAdi ? 'has-error' : ''}`}>
-              <label htmlFor="anneAdi">
+            <div className={`form-group ${errors.motherName ? 'has-error' : ''}`}>
+              <label htmlFor="motherName">
                 Anne Adı <span className="required-star">*</span>
               </label>
               <input
-                id="anneAdi"
+                id="motherName"
                 type="text"
-                name="anneAdi"
+                name="motherName"
                 placeholder="Örn: Ayşe"
-                value={formData.anneAdi || ''}
+                value={formData.motherName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
-              {errors.anneAdi && <span className="error-text">{errors.anneAdi}</span>}
+              {errors.motherName && <span className="error-text">{errors.motherName}</span>}
             </div>
 
             {/* Baba Adı */}
-            <div className={`form-group ${errors.babaAdi ? 'has-error' : ''}`}>
-              <label htmlFor="babaAdi">
+            <div className={`form-group ${errors.fatherName ? 'has-error' : ''}`}>
+              <label htmlFor="fatherName">
                 Baba Adı <span className="required-star">*</span>
               </label>
               <input
-                id="babaAdi"
+                id="fatherName"
                 type="text"
-                name="babaAdi"
+                name="fatherName"
                 placeholder="Örn: Mehmet"
-                value={formData.babaAdi || ''}
+                value={formData.fatherName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
-              {errors.babaAdi && <span className="error-text">{errors.babaAdi}</span>}
+              {errors.fatherName && <span className="error-text">{errors.fatherName }</span>}
             </div>
 
             {/* Doğum Tarihi */}
-            <div className={`form-group full-width ${errors.dogumTarihi ? 'has-error' : ''}`}>
-              <label htmlFor="dogumTarihi">
+            <div className={`form-group full-width ${errors.birthDate ? 'has-error' : ''}`}>
+              <label htmlFor="birthDate">
                 Doğum Tarihi <span className="required-star">*</span>
               </label>
               <input
-                id="dogumTarihi"
+                id="birthDate"
                 type="date"
-                name="dogumTarihi"
-                value={formData.dogumTarihi || ''}
+                name="birthDate"
+                value={formData.birthDate || ''}
                 onChange={handleChange}
                 disabled={isLoading}
               />
-              {errors.dogumTarihi && <span className="error-text">{errors.dogumTarihi}</span>}
+              {errors.birthDate && <span className="error-text">{errors.birthDate}</span>}
             </div>
           </div>
 

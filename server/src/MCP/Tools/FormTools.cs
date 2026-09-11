@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using MCP.Server.Models;
 using ModelContextProtocol.Server;
 
 namespace Application.MCP.Tools;
@@ -7,62 +8,68 @@ namespace Application.MCP.Tools;
 [McpServerToolType]
 public static class FormTools
 {
-    [McpServerTool]
+    [McpServerTool(UseStructuredContent = true)]
     [Description("Kişisel bilgi formunun alanlarını ve bu alanların ne amaçla kullanıldığını döndürür.")]
-    public static string GetFormSchema()
+    public static FormSchemaResult GetFormSchema()
     {
-        return """
+        return new FormSchemaResult
         {
-            "form": "student",
-            "fields": [
-                {
-                    "name": "firstName",
-                    "label": "Ad",
-                    "type": "text"
-                },
-                {
-                    "name": "lastName",
-                    "label": "Soyad",
-                    "type": "text"
-                },
-                {
-                    "name": "tcNo",
-                    "label": "TC Kimlik No",
-                    "type": "text"
-                },
-                {
-                    "name": "email",
-                    "label": "E-posta",
-                    "type": "email"
-                },
-                {
-                    "name": "motherName",
-                    "label": "Anne Adı",
-                    "type": "text"
-                },
-                {
-                    "name": "fatherName",
-                    "label": "Baba Adı",
-                    "type": "text"
-                },
-                {
-                    "name": "birthDate",
-                    "label": "Doğum Tarihi",
-                    "type": "date"
-                }
+            Fields =
+            [
+                new FormField
+            {
+                Name = "firstName",
+                Label = "Ad",
+                Type = "text"
+            },
+            new FormField
+            {
+                Name = "lastName",
+                Label = "Soyad",
+                Type = "text"
+            },
+            new FormField
+            {
+                Name = "tcNo",
+                Label = "TC Kimlik No",
+                Type = "text"
+            },
+            new FormField
+            {
+                Name = "email",
+                Label = "E-posta",
+                Type = "email"
+            },
+            new FormField
+            {
+                Name = "motherName",
+                Label = "Anne Adı",
+                Type = "text"
+            },
+            new FormField
+            {
+                Name = "fatherName",
+                Label = "Baba Adı",
+                Type = "text"
+            },
+            new FormField
+            {
+                Name = "birthDate",
+                Label = "Doğum Tarihi",
+                Type = "date"
+            }
             ]
-        }
-        """;
+        };
     }
 
-    [McpServerTool]
+    [McpServerTool(UseStructuredContent = true)]
     [Description(
     "Kullanıcının konuşma sırasında açıkça verdiği kişisel bilgileri " +
     "kişisel bilgi formuna aktarmak için kullanılır. " +
     "Veritabanına kayıt yapmaz. " +
     "birthDate değeri her zaman YYYY-MM-DD formatında olmalıdır. " +
     "Örneğin 12.02.2000 değeri 2000-02-12 olarak gönderilmelidir.")]
-    public static string FillStudentForm(
+    public static FormPatchResult FillStudentForm(
     string? firstName = null,
     string? lastName = null,
     string? tcNo = null,
@@ -71,44 +78,45 @@ public static class FormTools
     string? fatherName = null,
     string? birthDate = null)
     {
-        var result = new
+        return new FormPatchResult
         {
-            firstName,
-            lastName,
-            tcNo,
-            email,
-            motherName,
-            fatherName,
-            birthDate = NormalizeBirthDate(birthDate)
+            Data = new FormPatchData
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                TcNo = tcNo,
+                Email = email,
+                MotherName = motherName,
+                FatherName = fatherName,
+                BirthDate = NormalizeBirthDate(birthDate)
+            }
         };
-
-        return JsonSerializer.Serialize(result);
     }
 
 
-    [McpServerTool]
-    [Description("Kisisel bilgi formunodaki dolu veya bos oldugunu gosterir." + "Form degerlerini degistirmez veya veritabanina kaydetmez.")]
-    public static string GetFormStatus(
-        string? firstName = null,
-        string? lastName = null,
-        string? tcNo = null,
-        string? email = null,
-        string? motherName = null,
-        string? fatherName = null,
-        string? birthDate = null)
+    [McpServerTool(UseStructuredContent = true)]
+    [Description(
+    "Kişisel bilgi formundaki alanların dolu veya boş olduğunu gösterir. " +
+    "Form değerlerini değiştirmez veya veritabanına kaydetmez.")]
+    public static FormStatusResult GetFormStatus(
+    string? firstName = null,
+    string? lastName = null,
+    string? tcNo = null,
+    string? email = null,
+    string? motherName = null,
+    string? fatherName = null,
+    string? birthDate = null)
     {
-        var status = new
+        return new FormStatusResult
         {
-            firstName = !string.IsNullOrWhiteSpace(firstName),
-            lastName = !string.IsNullOrWhiteSpace(lastName),
-            tcNo = !string.IsNullOrWhiteSpace(tcNo),
-            email = !string.IsNullOrWhiteSpace(email),
-            motherName = !string.IsNullOrWhiteSpace(motherName),
-            fatherName = !string.IsNullOrWhiteSpace(fatherName),
-            birthDate = !string.IsNullOrWhiteSpace(birthDate)
+            FirstName = !string.IsNullOrWhiteSpace(firstName),
+            LastName = !string.IsNullOrWhiteSpace(lastName),
+            TcNo = !string.IsNullOrWhiteSpace(tcNo),
+            Email = !string.IsNullOrWhiteSpace(email),
+            MotherName = !string.IsNullOrWhiteSpace(motherName),
+            FatherName = !string.IsNullOrWhiteSpace(fatherName),
+            BirthDate = !string.IsNullOrWhiteSpace(birthDate)
         };
-
-        return JsonSerializer.Serialize(status);
     }
 
 

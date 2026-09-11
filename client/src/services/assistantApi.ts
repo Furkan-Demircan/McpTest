@@ -4,37 +4,37 @@ export interface ChatMessage {
 }
 
 export interface FormData {
-  ad: string
-  soyad: string
+  firstName: string
+  lastName: string
   tcNo: string
   email: string
-  anneAdi: string
-  babaAdi: string
-  dogumTarihi: string
+  motherName: string
+  fatherName: string
+  birthDate: string
 }
 
 export interface AiChatRequest {
+  currentPage?: string
   messages: ChatMessage[]
   formData: FormData
 }
 
-export interface AiChatResponse {
+export interface AiAction {
+  type: string
+  target?: string
+  data: Record<string, unknown>
+}
+
+interface AiChatResponse {
   message: string
-  formPatch: {
-    firstName?: string
-    lastName?: string
-    tcNo?: string
-    email?: string
-    motherName?: string
-    fatherName?: string
-    birthDate?: string
-  }
   missingFields: string[]
+  actions: AiAction[]
 }
 
 export async function sendAssistantMessage(
   messages: ChatMessage[],
-  formData: FormData
+  formData: FormData,
+  currentPage?: string
 ): Promise<AiChatResponse> {
   const response = await fetch('/api/assistant/chat', {
     method: 'POST',
@@ -42,6 +42,7 @@ export async function sendAssistantMessage(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      currentPage,
       messages,
       formData,
     }),
