@@ -4,12 +4,14 @@ import {
   sendAssistantMessage,
   type ChatMessage,
 } from '../services/assistantApi'
-import {useLocation} from 'react-router-dom'
+import {useNavigate,useLocation} from 'react-router-dom'
+
 
 import { useFormContext } from '../contexts/useFormContext'
 import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
 import { createFormPatchHandlerRegistry } from '../assistant/actions/formPatchHandlerRegistry'
 import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
+import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 
 interface Message {
   id: string
@@ -43,6 +45,9 @@ export const AssistantWidget: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const navigationHandler = createNavigationHandler(navigate)
   
   const formPatchHandler = createStudentFormHandler(setFormData)
 
@@ -52,6 +57,7 @@ const formPatchHandlerRegistry =
 const actionHandlerRegistry =
   createActionHandlerRegistry({
     formPatchHandler: formPatchHandlerRegistry.handle,
+    navigationHandler,
   })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -124,7 +130,10 @@ const actionHandlerRegistry =
     const response =
   await sendAssistantMessage(chatMessages, formData, location.pathname)
     
-    response.actions?.forEach(actionHandlerRegistry.handle)
+    response.actions?.forEach((action) => {
+  console.log('AI Action:', action)
+  actionHandlerRegistry.handle(action)
+})
 
     const botMessage: Message = {
       id: getNextId(),

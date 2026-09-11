@@ -70,6 +70,7 @@ public class AiAssistantService : IAiAssistantService
                     BuildToolArguments(
                         toolCall,
                         request.FormData,
+                        request.CurrentPage,
                         tools);
 
                 var result =
@@ -108,7 +109,9 @@ public class AiAssistantService : IAiAssistantService
     private Dictionary<string, object?> BuildToolArguments(
         AiToolCall toolCall,
         Dictionary<string, string?> formData,
-        List<AiToolDefinition> tools)
+        string? currentPage,
+        List<AiToolDefinition> tools
+        )
     {
         var arguments =
             JsonSerializer.Deserialize<
@@ -128,7 +131,8 @@ public class AiAssistantService : IAiAssistantService
         _toolContextResolver.ApplyContext(
             tool,
             arguments,
-            formData);
+            formData,
+            currentPage);
 
         return arguments;
     }

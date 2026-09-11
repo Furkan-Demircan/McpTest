@@ -7,7 +7,11 @@ export function createStudentFormHandler(
   setFormData: Dispatch<SetStateAction<FormData>>
 ) {
   return (action: AiAction) => {
+
+    console.log('Form Patch Action:', action)
     const data = action.data
+    console.log('Form Patch Data:', data)
+
 
     setFormData((current) => ({
       ...current,

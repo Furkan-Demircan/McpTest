@@ -25,12 +25,15 @@ public class ToolContextResolver : IToolContextResolver
     }
 
     private static void ApplyFormContext(
-        Dictionary<string, object?> arguments,
-        Dictionary<string, string?> formData)
+    Dictionary<string, object?> arguments,
+    Dictionary<string, string?> formData)
     {
         foreach (var field in formData)
         {
-            arguments[field.Key] = field.Value;
+            if (!arguments.ContainsKey(field.Key))
+            {
+                arguments[field.Key] = field.Value;
+            }
         }
     }
 }

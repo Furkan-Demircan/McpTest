@@ -3,13 +3,16 @@ import type { AiActionHandler } from './types'
 
 interface ActionHandlerRegistryOptions {
   formPatchHandler: AiActionHandler
+  navigationHandler: AiActionHandler
 }
 
 export function createActionHandlerRegistry({
   formPatchHandler,
+  navigationHandler,
 }: ActionHandlerRegistryOptions) {
   const handlers: Record<string, AiActionHandler> = {
     form_patch: formPatchHandler,
+    navigation: navigationHandler,
   }
 
   return {
