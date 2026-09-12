@@ -64,11 +64,13 @@ public static class FormTools
 
     [McpServerTool(UseStructuredContent = true)]
     [Description(
-    "Kullanıcının konuşma sırasında açıkça verdiği kişisel bilgileri " +
-    "kişisel bilgi formuna aktarmak için kullanılır. " +
+    "Kullanıcının kişisel bilgi formundaki alanlarını doldurmak veya güncellemek için kullanılır. " +
+    "Kullanıcı bir veya daha fazla form bilgisi verdiğinde bu tool MUTLAKA çağrılmalıdır. " +
+    "Kullanıcı daha önce doldurulmuş alanlara ek olarak yeni bir bilgi verdiğinde yalnızca yeni bilgileri göndermek yeterlidir. " +
+    "Kullanıcı 'formu doldur', 'forma ekle', 'kaydetme, forma aktar' veya benzer bir ifade kullandığında verilen bilgileri forma aktarmak için bu tool kullanılmalıdır. " +
     "Veritabanına kayıt yapmaz. " +
-    "birthDate değeri her zaman YYYY-MM-DD formatında olmalıdır. " +
-    "Örneğin 12.02.2000 değeri 2000-02-12 olarak gönderilmelidir.")]
+    "birthDate değeri YYYY-MM-DD formatında gönderilmelidir. " +
+    "Örneğin 11.02.2013 değeri 2013-02-11 olarak gönderilmelidir.")]
     public static FormPatchResult FillStudentForm(
     string? firstName = null,
     string? lastName = null,
