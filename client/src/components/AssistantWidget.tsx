@@ -8,11 +8,9 @@ import {useNavigate,useLocation} from 'react-router-dom'
 
 
 import { useFormContext } from '../contexts/useFormContext'
-import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
-import { createTeacherFormHandler } from '../assistant/actions/forms/teacherFormHandler'
-import { createFormPatchHandlerRegistry } from '../assistant/actions/formPatchHandlerRegistry'
 import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
+import { createFormRegistry } from '../assistant/actions/forms/formRegistry'
 
 interface Message {
   id: string
@@ -100,12 +98,6 @@ function getCurrentTimeString(): string {
 }
 
 export const AssistantWidget: React.FC = () => {
-  const {
-    studentFormData,
-    setStudentFormData,
-    teacherFormData,
-    setTeacherFormData,
-  } = useFormContext()
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -113,6 +105,22 @@ export const AssistantWidget: React.FC = () => {
   const isListeningRef = useRef(false)
   const location = useLocation()
   const navigate = useNavigate()
+  
+  const {
+    studentFormData,
+    setStudentFormData,
+    teacherFormData,
+    setTeacherFormData,
+  } = useFormContext()
+  const formRegistry = createFormRegistry({
+    studentFormData,
+    teacherFormData,
+    setStudentFormData,
+    setTeacherFormData,
+  })
+
+  const formPatchHandler =
+    formRegistry.getFormHandler(location.pathname)
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const baseTextRef = useRef<string>('')
@@ -122,18 +130,12 @@ export const AssistantWidget: React.FC = () => {
   const isSpeechSupported = typeof window !== 'undefined' && Boolean(getSpeechRecognition())
 
   const navigationHandler = createNavigationHandler(navigate)
-  
-  const studentFormPatchHandler = createStudentFormHandler(setStudentFormData)
-  const teacherFormPatchHandler = createTeacherFormHandler(setTeacherFormData)
 
-  const formPatchHandlerRegistry =
-    createFormPatchHandlerRegistry(studentFormPatchHandler, teacherFormPatchHandler)
-
-  const actionHandlerRegistry =
-    createActionHandlerRegistry({
-      formPatchHandler: formPatchHandlerRegistry.handle,
-      navigationHandler,
-    })
+const actionHandlerRegistry =
+  createActionHandlerRegistry({
+    formPatchHandler: formPatchHandler ?? (() => {}),
+    navigationHandler,
+  })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -339,13 +341,14 @@ export const AssistantWidget: React.FC = () => {
         content: message.text,
       }))
 
-    const isTeacherRoute =
-      location.pathname.startsWith('/teacher') || location.pathname.startsWith('/ogretmen')
-    const activeFormData = isTeacherRoute ? teacherFormData : studentFormData
+    const activeFormData = formRegistry.getFormData(location.pathname) ?? {}
 
     // Tüm conversation history'yi gönder
-    const response =
-      await sendAssistantMessage(chatMessages, activeFormData, location.pathname)
+    const response = await sendAssistantMessage(
+      chatMessages,
+      activeFormData,
+      location.pathname
+    ) 
     
     response.actions?.forEach((action) => {
   console.log('AI Action:', action)
