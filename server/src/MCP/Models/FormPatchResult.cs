@@ -19,6 +19,8 @@ public class FormPatchData
 
     public string? Email { get; set; }
 
+    public string? Branch { get; set; }
+
     public string? MotherName { get; set; }
 
     public string? FatherName { get; set; }

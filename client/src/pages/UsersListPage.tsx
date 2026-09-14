@@ -75,9 +75,14 @@ export const UsersListPage: React.FC = () => {
           <Link to="/" className="nav-btn-back">
             ← Ana Sayfa
           </Link>
-          <Link to="/form" className="nav-btn-add">
-            + Yeni Kullanıcı Ekle
-          </Link>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Link to="/form" className="nav-btn-add">
+              + 👨‍🎓 Öğrenci Ekle
+            </Link>
+            <Link to="/teacher" className="nav-btn-add" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)' }}>
+              + 👩‍🏫 Öğretmen Ekle
+            </Link>
+          </div>
         </div>
 
         <div className="header-titles">
@@ -171,9 +176,14 @@ export const UsersListPage: React.FC = () => {
               Aramayı Temizle
             </button>
           ) : (
-            <Link to="/form" className="btn-primary">
-              İlk Kullanıcıyı Ekle
-            </Link>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/form" className="btn-primary">
+                👨‍🎓 Öğrenci Ekle
+              </Link>
+              <Link to="/teacher" className="btn-primary" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)' }}>
+                👩‍🏫 Öğretmen Ekle
+              </Link>
+            </div>
           )}
         </div>
       ) : (

@@ -66,7 +66,8 @@ public class DeepSeekAiProvider : IAiProvider
 
                 Uygulamadaki sayfalar:
                 - Ana Sayfa: /
-                - Kişisel Bilgi Formu: /form
+                - Öğrenci Ekleme Formu: /form (veya /student, /ogrenci)
+                - Öğretmen Ekleme Formu: /teacher (veya /ogretmen)
                 - Kayıtlı Kullanıcılar: /users
 
                 Önemli sınırlar:
@@ -80,7 +81,10 @@ public class DeepSeekAiProvider : IAiProvider
 
                 Boş string değerleri doldurulmamış kabul et.
 
-                Kullanıcı yeni bir bilgi verdiğinde fill_student_form
+                Kullanıcı öğrenci bilgisi verdiğinde veya öğrenci formundayken fill_student_form
+                tool'unu yalnızca yeni verilen bilgilerle çağır.
+
+                Kullanıcı öğretmen bilgisi (branş dahil) verdiğinde veya öğretmen formundayken fill_teacher_form
                 tool'unu yalnızca yeni verilen bilgilerle çağır.
 
                 Mevcut formda zaten bulunan bilgileri tekrar göndermene gerek yok.

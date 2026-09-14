@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useFormContext } from '../contexts/useFormContext'
 import { Link } from 'react-router-dom'
 import {
-  initialStudentFormData,
+  initialTeacherFormData,
 } from '../contexts/FormContext'
 import { api, type UserResponse } from '../services/api'
 import './FormPage.css'
@@ -11,15 +11,36 @@ interface FormErrors {
   [key: string]: string
 }
 
-function FormPage() {
-  const { studentFormData: formData, setStudentFormData: setFormData } = useFormContext()
+const COMMON_BRANCHES = [
+  'Matematik',
+  'Fizik',
+  'Kimya',
+  'Biyoloji',
+  'Türkçe ve Edebiyat',
+  'Tarih',
+  'Coğrafya',
+  'İngilizce',
+  'Bilişim Teknolojileri / Yazılım',
+  'Müzik',
+  'Görsel Sanatlar',
+  'Beden Eğitimi',
+  'Felsefe',
+  'Rehberlik ve Psikolojik Danışmanlık',
+  'Sınıf Öğretmenliği',
+]
+
+function TeacherFormPage() {
+  const { teacherFormData: formData, setTeacherFormData: setFormData } = useFormContext()
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [backendError, setBackendError] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
   const [savedUser, setSavedUser] = useState<UserResponse | null>(null)
+  const [savedBranch, setSavedBranch] = useState<string>('')
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
 
     if (name === 'tcNo') {
@@ -50,15 +71,16 @@ function FormPage() {
     const lastName = (formData.lastName || '').trim()
     const tcNo = (formData.tcNo || '').trim()
     const email = (formData.email || '').trim()
+    const branch = (formData.branch || '').trim()
     const motherName = (formData.motherName || '').trim()
     const fatherName = (formData.fatherName || '').trim()
     const birthDate = (formData.birthDate || '').trim()
 
     if (!firstName) {
-      newErrors.firstName = 'Öğrenci adı zorunludur.'
+      newErrors.firstName = 'Öğretmen adı zorunludur.'
     }
     if (!lastName) {
-      newErrors.lastName = 'Öğrenci soyadı zorunludur.'
+      newErrors.lastName = 'Öğretmen soyadı zorunludur.'
     }
 
     if (!tcNo) {
@@ -72,6 +94,10 @@ function FormPage() {
       newErrors.email = 'E-posta adresi zorunludur.'
     } else if (!emailRegex.test(email)) {
       newErrors.email = 'Geçerli bir e-posta adresi giriniz.'
+    }
+
+    if (!branch) {
+      newErrors.branch = 'Öğretmen branş / uzmanlık alanı zorunludur.'
     }
 
     if (!motherName) {
@@ -113,6 +139,7 @@ function FormPage() {
         birthDate: formData.birthDate || '',
       })
 
+      setSavedBranch((formData.branch || '').trim())
       setSavedUser(result)
       setIsSubmitted(true)
     } catch (err: unknown) {
@@ -125,11 +152,12 @@ function FormPage() {
   }
 
   const handleReset = () => {
-    setFormData(initialStudentFormData)
+    setFormData(initialTeacherFormData)
     setErrors({})
     setBackendError(null)
     setIsSubmitted(false)
     setSavedUser(null)
+    setSavedBranch('')
   }
 
   return (
@@ -140,17 +168,17 @@ function FormPage() {
             ← Ana Sayfaya Dön
           </Link>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <Link to="/teacher" className="back-link" style={{ marginBottom: 0, background: 'var(--social-bg)', borderColor: 'var(--border)', color: 'var(--text-h)' }}>
-              👩‍🏫 Öğretmen Ekleme Sayfası
+            <Link to="/form" className="back-link" style={{ marginBottom: 0, background: 'var(--social-bg)', borderColor: 'var(--border)', color: 'var(--text-h)' }}>
+              👨‍🎓 Öğrenci Ekleme Sayfası
             </Link>
             <Link to="/users" className="back-link" style={{ marginBottom: 0, background: 'var(--social-bg)', borderColor: 'var(--border)', color: 'var(--text-h)' }}>
               📋 Kayıtlı Kullanıcıları Gör
             </Link>
           </div>
         </div>
-        <h1>👨‍🎓 Öğrenci Ekleme Formu</h1>
+        <h1>👩‍🏫 Öğretmen Ekleme Formu</h1>
         <p className="form-description">
-          Lütfen öğrenci kişisel bilgilerini eksiksiz doldurunuz. Veriler PostgreSQL veritabanına kaydedilecektir.
+          Lütfen öğretmen kişisel ve branş bilgilerini eksiksiz doldurunuz. Veriler PostgreSQL veritabanına kaydedilecektir.
         </p>
       </div>
 
@@ -164,8 +192,8 @@ function FormPage() {
       {isSubmitted && savedUser ? (
         <div className="success-card">
           <div className="success-icon">✓</div>
-          <h2>Öğrenci Veritabanına Kaydedildi!</h2>
-          <p>Öğrenci kayıt bilgileri Clean Architecture backend servisi üzerinden başarıyla kaydedildi:</p>
+          <h2>Öğretmen Veritabanına Kaydedildi!</h2>
+          <p>Öğretmen kayıt bilgileri Clean Architecture backend servisi üzerinden başarıyla kaydedildi:</p>
 
           <div className="submitted-info-grid">
             <div className="info-item">
@@ -174,15 +202,21 @@ function FormPage() {
             </div>
             <div className="info-item">
               <span className="info-label">Kayıt Türü:</span>
-              <span className="info-value">👨‍🎓 Öğrenci</span>
+              <span className="info-value">👩‍🏫 Öğretmen</span>
             </div>
             <div className="info-item">
-              <span className="info-label">Öğrenci Adı:</span>
+              <span className="info-label">Öğretmen Adı:</span>
               <span className="info-value">{savedUser.firstName}</span>
             </div>
             <div className="info-item">
-              <span className="info-label">Öğrenci Soyadı:</span>
+              <span className="info-label">Öğretmen Soyadı:</span>
               <span className="info-value">{savedUser.lastName}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Branş / Uzmanlık:</span>
+              <span className="info-value" style={{ color: 'var(--accent)', fontWeight: 700 }}>
+                🎯 {savedBranch || 'Belirtilmedi'}
+              </span>
             </div>
             <div className="info-item">
               <span className="info-label">TC Kimlik No:</span>
@@ -204,7 +238,7 @@ function FormPage() {
               <span className="info-label">Doğum Tarihi:</span>
               <span className="info-value">{savedUser.birthDate}</span>
             </div>
-            <div className="info-item">
+            <div className="info-item full-width" style={{ gridColumn: 'span 2' }}>
               <span className="info-label">Kayıt Tarihi:</span>
               <span className="info-value">{new Date(savedUser.createdAt).toLocaleString('tr-TR')}</span>
             </div>
@@ -212,10 +246,10 @@ function FormPage() {
 
           <div className="success-actions">
             <button type="button" className="btn-secondary" onClick={handleReset}>
-              Yeni Öğrenci Ekle
+              Yeni Öğretmen Ekle
             </button>
-            <Link to="/teacher" className="btn-secondary">
-              👩‍🏫 Öğretmen Ekle
+            <Link to="/form" className="btn-secondary">
+              👨‍🎓 Öğrenci Ekle
             </Link>
             <Link to="/users" className="btn-secondary">
               📋 Kayıtları Gör
@@ -230,14 +264,14 @@ function FormPage() {
           <div className="form-grid">
             {/* Ad */}
             <div className={`form-group ${errors.firstName ? 'has-error' : ''}`}>
-              <label htmlFor="firstName">
-                Öğrenci Adı <span className="required-star">*</span>
+              <label htmlFor="teacherFirstName">
+                Öğretmen Adı <span className="required-star">*</span>
               </label>
               <input
-                id="firstName"
+                id="teacherFirstName"
                 type="text"
                 name="firstName"
-                placeholder="Örn: Ahmet"
+                placeholder="Örn: Fatma"
                 value={formData.firstName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -247,14 +281,14 @@ function FormPage() {
 
             {/* Soyad */}
             <div className={`form-group ${errors.lastName ? 'has-error' : ''}`}>
-              <label htmlFor="lastName">
-                Öğrenci Soyadı <span className="required-star">*</span>
+              <label htmlFor="teacherLastName">
+                Öğretmen Soyadı <span className="required-star">*</span>
               </label>
               <input
-                id="lastName"
+                id="teacherLastName"
                 type="text"
                 name="lastName"
-                placeholder="Örn: Yılmaz"
+                placeholder="Örn: Kaya"
                 value={formData.lastName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -264,11 +298,11 @@ function FormPage() {
 
             {/* TC No */}
             <div className={`form-group ${errors.tcNo ? 'has-error' : ''}`}>
-              <label htmlFor="tcNo">
+              <label htmlFor="teacherTcNo">
                 TC Kimlik Numarası <span className="required-star">*</span>
               </label>
               <input
-                id="tcNo"
+                id="teacherTcNo"
                 type="text"
                 name="tcNo"
                 placeholder="11 haneli kimlik numarası"
@@ -282,14 +316,14 @@ function FormPage() {
 
             {/* E-posta */}
             <div className={`form-group ${errors.email ? 'has-error' : ''}`}>
-              <label htmlFor="email">
+              <label htmlFor="teacherEmail">
                 E-posta Adresi <span className="required-star">*</span>
               </label>
               <input
-                id="email"
+                id="teacherEmail"
                 type="email"
                 name="email"
-                placeholder="Örn: ahmet@ogrenci.edu.tr"
+                placeholder="Örn: fatma.kaya@ogretmen.meb.gov.tr"
                 value={formData.email || ''}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -297,16 +331,75 @@ function FormPage() {
               {errors.email && <span className="error-text">{errors.email}</span>}
             </div>
 
+            {/* Branş / Uzmanlık Alanı */}
+            <div className={`form-group full-width ${errors.branch ? 'has-error' : ''}`}>
+              <label htmlFor="teacherBranch">
+                Branş / Uzmanlık Alanı <span className="required-star">*</span>
+              </label>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <input
+                  id="teacherBranch"
+                  type="text"
+                  name="branch"
+                  list="branchSuggestions"
+                  placeholder="Örn: Matematik, Fizik, Bilişim Teknolojileri..."
+                  value={formData.branch || ''}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  style={{ flex: '1 1 240px' }}
+                />
+                <datalist id="branchSuggestions">
+                  {COMMON_BRANCHES.map((b) => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
+                <select
+                  aria-label="Hazır Branş Seçimi"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setFormData((prev) => ({ ...prev, branch: e.target.value }))
+                      if (errors.branch) {
+                        setErrors((prev) => {
+                          const next = { ...prev }
+                          delete next.branch
+                          return next
+                        })
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    border: '1.5px solid var(--border)',
+                    background: 'var(--bg)',
+                    color: 'var(--text-h)',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="">-- Hazır Branş Listesi --</option>
+                  {COMMON_BRANCHES.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errors.branch && <span className="error-text">{errors.branch}</span>}
+            </div>
+
             {/* Anne Adı */}
             <div className={`form-group ${errors.motherName ? 'has-error' : ''}`}>
-              <label htmlFor="motherName">
+              <label htmlFor="teacherMotherName">
                 Anne Adı <span className="required-star">*</span>
               </label>
               <input
-                id="motherName"
+                id="teacherMotherName"
                 type="text"
                 name="motherName"
-                placeholder="Örn: Ayşe"
+                placeholder="Örn: Fatma"
                 value={formData.motherName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -316,14 +409,14 @@ function FormPage() {
 
             {/* Baba Adı */}
             <div className={`form-group ${errors.fatherName ? 'has-error' : ''}`}>
-              <label htmlFor="fatherName">
+              <label htmlFor="teacherFatherName">
                 Baba Adı <span className="required-star">*</span>
               </label>
               <input
-                id="fatherName"
+                id="teacherFatherName"
                 type="text"
                 name="fatherName"
-                placeholder="Örn: Mehmet"
+                placeholder="Örn: Ali"
                 value={formData.fatherName || ''}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -333,11 +426,11 @@ function FormPage() {
 
             {/* Doğum Tarihi */}
             <div className={`form-group full-width ${errors.birthDate ? 'has-error' : ''}`}>
-              <label htmlFor="birthDate">
+              <label htmlFor="teacherBirthDate">
                 Doğum Tarihi <span className="required-star">*</span>
               </label>
               <input
-                id="birthDate"
+                id="teacherBirthDate"
                 type="date"
                 name="birthDate"
                 value={formData.birthDate || ''}
@@ -362,7 +455,7 @@ function FormPage() {
               className="btn-primary"
               disabled={isLoading}
             >
-              {isLoading ? 'Kaydediliyor...' : 'Öğrenciyi Kaydet'}
+              {isLoading ? 'Kaydediliyor...' : 'Öğretmeni Kaydet'}
             </button>
           </div>
         </form>
@@ -371,4 +464,4 @@ function FormPage() {
   )
 }
 
-export default FormPage
+export default TeacherFormPage

@@ -9,6 +9,7 @@ import {useNavigate,useLocation} from 'react-router-dom'
 
 import { useFormContext } from '../contexts/useFormContext'
 import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
+import { createTeacherFormHandler } from '../assistant/actions/forms/teacherFormHandler'
 import { createFormPatchHandlerRegistry } from '../assistant/actions/formPatchHandlerRegistry'
 import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
@@ -18,6 +19,65 @@ interface Message {
   sender: 'bot' | 'user'
   text: string
   time: string
+}
+
+interface SpeechRecognitionResultItem {
+  readonly transcript: string
+  readonly confidence: number
+}
+
+interface SpeechRecognitionResult {
+  readonly isFinal: boolean
+  readonly length: number
+  [index: number]: SpeechRecognitionResultItem
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number
+  readonly results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: string
+  readonly message?: string
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onstart: ((event: Event) => void) | null
+  onend: ((event: Event) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
+
+const getSpeechRecognition = (): SpeechRecognitionConstructor | null => {
+  if (typeof window === 'undefined') return null
+  const win = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+  return win.SpeechRecognition || win.webkitSpeechRecognition || null
+}
+
+const combineTexts = (
+  base: string,
+  finalTranscript: string,
+  interim: string
+): string => {
+  const parts = [base.trim(), finalTranscript.trim(), interim.trim()].filter(Boolean)
+  return parts.join(' ')
 }
 
 let messageCounter = 1
@@ -40,25 +100,40 @@ function getCurrentTimeString(): string {
 }
 
 export const AssistantWidget: React.FC = () => {
-  const { formData, setFormData } = useFormContext()
+  const {
+    studentFormData,
+    setStudentFormData,
+    teacherFormData,
+    setTeacherFormData,
+  } = useFormContext()
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const isListeningRef = useRef(false)
   const location = useLocation()
   const navigate = useNavigate()
 
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const baseTextRef = useRef<string>('')
+  const finalTranscriptRef = useRef<string>('')
+  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isSpeechSupported = typeof window !== 'undefined' && Boolean(getSpeechRecognition())
+
   const navigationHandler = createNavigationHandler(navigate)
   
-  const formPatchHandler = createStudentFormHandler(setFormData)
+  const studentFormPatchHandler = createStudentFormHandler(setStudentFormData)
+  const teacherFormPatchHandler = createTeacherFormHandler(setTeacherFormData)
 
-const formPatchHandlerRegistry =
-  createFormPatchHandlerRegistry(formPatchHandler)
+  const formPatchHandlerRegistry =
+    createFormPatchHandlerRegistry(studentFormPatchHandler, teacherFormPatchHandler)
 
-const actionHandlerRegistry =
-  createActionHandlerRegistry({
-    formPatchHandler: formPatchHandlerRegistry.handle,
-    navigationHandler,
-  })
+  const actionHandlerRegistry =
+    createActionHandlerRegistry({
+      formPatchHandler: formPatchHandlerRegistry.handle,
+      navigationHandler,
+    })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -73,10 +148,10 @@ const actionHandlerRegistry =
   ])
 
   const quickQuestions = [
+    'Öğrenci nasıl eklenir?',
+    'Öğretmen nasıl eklenir?',
     'Hangi bilgiler gerekli?',
     'Kayıtları nasıl görürüm?',
-    'TC No güvenli mi?',
-    'Formu nasıl gönderebilirim?',
   ]
 
   const scrollToBottom = () => {
@@ -91,7 +166,145 @@ const actionHandlerRegistry =
     }
   }, [messages, isOpen, isTyping])
 
+  const stopListening = () => {
+    isListeningRef.current = false
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current)
+      restartTimerRef.current = null
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch {
+        // ignore
+      }
+      recognitionRef.current = null
+    }
+    setIsListening(false)
+  }
+
+  const startRecognitionSession = () => {
+    const SpeechRecognitionClass = getSpeechRecognition()
+    if (!SpeechRecognitionClass || !isListeningRef.current) {
+      return
+    }
+
+    const recognition = new SpeechRecognitionClass()
+    recognition.lang = 'tr-TR'
+    recognition.continuous = true
+    recognition.interimResults = true
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = ''
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        const transcript = result[0].transcript
+        if (result.isFinal) {
+          const finalChunk = transcript.trim()
+          if (finalChunk) {
+            finalTranscriptRef.current = finalTranscriptRef.current
+              ? `${finalTranscriptRef.current} ${finalChunk}`
+              : finalChunk
+          }
+        } else {
+          interim += transcript
+        }
+      }
+
+      const combined = combineTexts(
+        baseTextRef.current,
+        finalTranscriptRef.current,
+        interim
+      )
+      setInputMessage(combined)
+    }
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.warn('Speech recognition error:', event.error)
+      if (
+        event.error === 'not-allowed' ||
+        event.error === 'service-not-allowed' ||
+        event.error === 'audio-capture'
+      ) {
+        stopListening()
+      }
+    }
+
+    recognition.onend = () => {
+      // Duraksama veya sessizlik zaman aşımında kullanıcı kapatmadıysa konuşma modunu açık tut
+      if (isListeningRef.current) {
+        restartTimerRef.current = setTimeout(() => {
+          if (isListeningRef.current) {
+            startRecognitionSession()
+          }
+        }, 200)
+      } else {
+        setIsListening(false)
+      }
+    }
+
+    try {
+      recognition.start()
+      recognitionRef.current = recognition
+    } catch (err) {
+      console.error('Speech recognition start failed:', err)
+      stopListening()
+    }
+  }
+
+  const startListening = () => {
+    const SpeechRecognitionClass = getSpeechRecognition()
+    if (!SpeechRecognitionClass) {
+      alert('Tarayıcınız sesle yazmayı (Web Speech API) desteklemiyor.')
+      return
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort()
+      } catch {
+        // ignore
+      }
+      recognitionRef.current = null
+    }
+
+    baseTextRef.current = inputMessage
+    finalTranscriptRef.current = ''
+    isListeningRef.current = true
+    setIsListening(true)
+
+    startRecognitionSession()
+  }
+
+  const toggleListening = () => {
+    if (isListeningRef.current) {
+      stopListening()
+    } else {
+      startListening()
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      isListeningRef.current = false
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current)
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort()
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [])
+
   const handleSendMessage = async (messageText: string) => {
+  if (isListeningRef.current) {
+    stopListening()
+  }
   const trimmedMessage = messageText.trim()
 
   if (!trimmedMessage || isTyping) {
@@ -126,9 +339,13 @@ const actionHandlerRegistry =
         content: message.text,
       }))
 
+    const isTeacherRoute =
+      location.pathname.startsWith('/teacher') || location.pathname.startsWith('/ogretmen')
+    const activeFormData = isTeacherRoute ? teacherFormData : studentFormData
+
     // Tüm conversation history'yi gönder
     const response =
-  await sendAssistantMessage(chatMessages, formData, location.pathname)
+      await sendAssistantMessage(chatMessages, activeFormData, location.pathname)
     
     response.actions?.forEach((action) => {
   console.log('AI Action:', action)
@@ -175,6 +392,10 @@ const actionHandlerRegistry =
   ) => {
     e.preventDefault()
 
+    if (isListeningRef.current) {
+      stopListening()
+    }
+
     handleSendMessage(inputMessage)
   }
 
@@ -207,9 +428,12 @@ const actionHandlerRegistry =
 
             <button
               className="close-btn"
-              onClick={() =>
+              onClick={() => {
+                if (isListeningRef.current) {
+                  stopListening()
+                }
                 setIsOpen(false)
-              }
+              }}
               aria-label="Pencereyi kapat"
               title="Kapat"
             >
@@ -255,9 +479,12 @@ const actionHandlerRegistry =
                   key={index}
                   type="button"
                   className="quick-btn"
-                  onClick={() =>
+                  onClick={() => {
+                    if (isListeningRef.current) {
+                      stopListening()
+                    }
                     handleSendMessage(question)
-                  }
+                  }}
                   disabled={isTyping}
                 >
                   {question}
@@ -272,16 +499,72 @@ const actionHandlerRegistry =
           >
             <input
               type="text"
-              placeholder="Bir soru yazın..."
-              value={inputMessage}
-              onChange={(e) =>
-                setInputMessage(
-                  e.target.value
-                )
+              placeholder={
+                isListening
+                  ? 'Dinleniyor... Konuşun...'
+                  : 'Bir soru yazın...'
               }
-              className="assistant-input"
+              value={inputMessage}
+              onChange={(e) => {
+                setInputMessage(e.target.value)
+                if (isListeningRef.current) {
+                  baseTextRef.current = e.target.value
+                  finalTranscriptRef.current = ''
+                }
+              }}
+              className={`assistant-input ${
+                isListening ? 'listening' : ''
+              }`}
               disabled={isTyping}
             />
+
+            <button
+              type="button"
+              className={`assistant-mic-btn ${
+                isListening ? 'listening' : ''
+              }`}
+              onClick={toggleListening}
+              disabled={isTyping || !isSpeechSupported}
+              aria-label={
+                isListening
+                  ? 'Dikteyi durdur'
+                  : 'Dikte ile yaz'
+              }
+              title={
+                !isSpeechSupported
+                  ? 'Tarayıcınız ses tanımayı desteklemiyor'
+                  : isListening
+                  ? 'Dikteyi durdur'
+                  : 'Dikte ile yaz (tr-TR)'
+              }
+            >
+              {isListening ? (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+              ) : (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="22" />
+                  <line x1="8" y1="22" x2="16" y2="22" />
+                </svg>
+              )}
+            </button>
 
             <button
               type="submit"
@@ -310,9 +593,12 @@ const actionHandlerRegistry =
         className={`assistant-trigger-btn ${
           isOpen ? 'active' : ''
         }`}
-        onClick={() =>
+        onClick={() => {
+          if (isOpen && isListeningRef.current) {
+            stopListening()
+          }
           setIsOpen(!isOpen)
-        }
+        }}
         aria-label={
           isOpen
             ? 'Asistanı kapat'
