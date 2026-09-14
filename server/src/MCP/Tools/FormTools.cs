@@ -82,12 +82,46 @@ public static class FormTools
     {
         return new FormPatchResult
         {
+            Target = "studentForm",
             Data = new FormPatchData
             {
                 FirstName = firstName,
                 LastName = lastName,
                 TcNo = tcNo,
                 Email = email,
+                MotherName = motherName,
+                FatherName = fatherName,
+                BirthDate = NormalizeBirthDate(birthDate)
+            }
+        };
+    }
+
+    [McpServerTool(UseStructuredContent = true)]
+    [Description(
+    "Kullanıcının öğretmen ekleme formundaki alanlarını doldurmak veya güncellemek için kullanılır. " +
+    "Kullanıcı öğretmen bilgisi (ad, soyad, tc, e-posta, branş, anne adı, baba adı, doğum tarihi) verdiğinde veya öğretmen formundayken bu tool MUTLAKA çağrılmalıdır. " +
+    "Veritabanına kayıt yapmaz. " +
+    "birthDate değeri YYYY-MM-DD formatında gönderilmelidir.")]
+    public static FormPatchResult FillTeacherForm(
+    string? firstName = null,
+    string? lastName = null,
+    string? tcNo = null,
+    string? email = null,
+    string? branch = null,
+    string? motherName = null,
+    string? fatherName = null,
+    string? birthDate = null)
+    {
+        return new FormPatchResult
+        {
+            Target = "teacherForm",
+            Data = new FormPatchData
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                TcNo = tcNo,
+                Email = email,
+                Branch = branch,
                 MotherName = motherName,
                 FatherName = fatherName,
                 BirthDate = NormalizeBirthDate(birthDate)

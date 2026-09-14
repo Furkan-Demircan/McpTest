@@ -11,14 +11,17 @@ public static class ApplicationInfoTools
     {
         return currentPage switch
         {
-            "/form" => "Kişisel bilgi formu",
+            "/form" => "Öğrenci ekleme formu",
+            "/student" => "Öğrenci ekleme formu",
+            "/ogrenci" => "Öğrenci ekleme formu",
+            "/teacher" => "Öğretmen ekleme formu",
+            "/teacher-form" => "Öğretmen ekleme formu",
+            "/ogretmen" => "Öğretmen ekleme formu",
             "/" => "Ana Sayfa",
             "/users" => "Kullanıcılar",
             _ => "Bilinmeyen Sayfa"
         };
     }
-
-
 
     [McpServerTool(UseStructuredContent = true)]
     [Description("Uygulamadaki mevcut sayfa hakkında bilgi verir.")]
@@ -42,7 +45,12 @@ public static class ApplicationInfoTools
         var allowedPages = new Dictionary<string, string>
         {
             ["/"] = "Ana sayfa",
-            ["/form"] = "Kişisel bilgi formu",
+            ["/form"] = "Öğrenci ekleme formu",
+            ["/student"] = "Öğrenci ekleme formu",
+            ["/ogrenci"] = "Öğrenci ekleme formu",
+            ["/teacher"] = "Öğretmen ekleme formu",
+            ["/teacher-form"] = "Öğretmen ekleme formu",
+            ["/ogretmen"] = "Öğretmen ekleme formu",
             ["/users"] = "Kullanıcılar"
         };
 

@@ -15,14 +15,18 @@ export const HomePage: React.FC = () => {
       </div>
 
       <div className="home-content">
-        <h1>Kişisel Bilgi Sistemi</h1>
+        <h1>Kişisel Bilgi & Okul Yönetim Sistemi</h1>
         <p className="home-subtitle">
-          Kullanıcı bilgilerini güvenli ve hızlı bir şekilde girmek için formu doldurabilir veya veritabanındaki kayıtları listeleyebilirsiniz.
+          Öğrenci ve öğretmen kayıtlarını güvenli, doğrulamalı formlar üzerinden sisteme ekleyebilir veya veritabanındaki tüm kayıtları inceleyebilirsiniz.
         </p>
 
         <div className="home-cta">
           <Link to="/form" className="btn-go-to-form">
-            <span>Form Sayfasına Git</span>
+            <span>👨‍🎓 Öğrenci Ekle</span>
+            <span className="btn-arrow">→</span>
+          </Link>
+          <Link to="/teacher" className="btn-go-to-teacher">
+            <span>👩‍🏫 Öğretmen Ekle</span>
             <span className="btn-arrow">→</span>
           </Link>
           <Link to="/users" className="btn-go-to-list">
@@ -33,19 +37,20 @@ export const HomePage: React.FC = () => {
         <div className="features-preview">
           <div className="feature-badge">
             <span className="badge-dot"></span>
-            Ad, Soyad ve TC Kimlik Doğrulaması
+            👨‍🎓 Öğrenci Kayıt & Ebeveyn Bilgileri
+          </div>
+          <div className="feature-badge">
+            <span className="badge-dot teacher-dot"></span>
+            👩‍🏫 Öğretmen & Branş Yönetimi
           </div>
           <div className="feature-badge">
             <span className="badge-dot"></span>
-            İletişim ve Ebeveyn Bilgileri
-          </div>
-          <div className="feature-badge">
-            <span className="badge-dot"></span>
-            Doğum Tarihi Kaydı
+            🔒 11 Haneli TC Kimlik & E-posta Doğrulaması
           </div>
         </div>
       </div>
     </section>
   )
 }
+
 export default HomePage

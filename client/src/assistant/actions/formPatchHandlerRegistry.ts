@@ -1,12 +1,13 @@
 import type { AiAction } from '../../services/assistantApi'
-
 import type { AiActionHandler } from './types'
 
 export function createFormPatchHandlerRegistry(
-  studentFormHandler: AiActionHandler
+  studentFormHandler: AiActionHandler,
+  teacherFormHandler?: AiActionHandler
 ) {
   const handlers: Record<string, AiActionHandler> = {
     studentForm: studentFormHandler,
+    ...(teacherFormHandler ? { teacherForm: teacherFormHandler } : {}),
   }
 
   return {

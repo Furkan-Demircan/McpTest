@@ -9,6 +9,7 @@ import {useNavigate,useLocation} from 'react-router-dom'
 
 import { useFormContext } from '../contexts/useFormContext'
 import { createStudentFormHandler } from '../assistant/actions/forms/studentFormHandler'
+import { createTeacherFormHandler } from '../assistant/actions/forms/teacherFormHandler'
 import { createFormPatchHandlerRegistry } from '../assistant/actions/formPatchHandlerRegistry'
 import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
@@ -99,7 +100,12 @@ function getCurrentTimeString(): string {
 }
 
 export const AssistantWidget: React.FC = () => {
-  const { formData, setFormData } = useFormContext()
+  const {
+    studentFormData,
+    setStudentFormData,
+    teacherFormData,
+    setTeacherFormData,
+  } = useFormContext()
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -117,16 +123,17 @@ export const AssistantWidget: React.FC = () => {
 
   const navigationHandler = createNavigationHandler(navigate)
   
-  const formPatchHandler = createStudentFormHandler(setFormData)
+  const studentFormPatchHandler = createStudentFormHandler(setStudentFormData)
+  const teacherFormPatchHandler = createTeacherFormHandler(setTeacherFormData)
 
-const formPatchHandlerRegistry =
-  createFormPatchHandlerRegistry(formPatchHandler)
+  const formPatchHandlerRegistry =
+    createFormPatchHandlerRegistry(studentFormPatchHandler, teacherFormPatchHandler)
 
-const actionHandlerRegistry =
-  createActionHandlerRegistry({
-    formPatchHandler: formPatchHandlerRegistry.handle,
-    navigationHandler,
-  })
+  const actionHandlerRegistry =
+    createActionHandlerRegistry({
+      formPatchHandler: formPatchHandlerRegistry.handle,
+      navigationHandler,
+    })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -141,10 +148,10 @@ const actionHandlerRegistry =
   ])
 
   const quickQuestions = [
+    'Öğrenci nasıl eklenir?',
+    'Öğretmen nasıl eklenir?',
     'Hangi bilgiler gerekli?',
     'Kayıtları nasıl görürüm?',
-    'TC No güvenli mi?',
-    'Formu nasıl gönderebilirim?',
   ]
 
   const scrollToBottom = () => {
@@ -332,9 +339,13 @@ const actionHandlerRegistry =
         content: message.text,
       }))
 
+    const isTeacherRoute =
+      location.pathname.startsWith('/teacher') || location.pathname.startsWith('/ogretmen')
+    const activeFormData = isTeacherRoute ? teacherFormData : studentFormData
+
     // Tüm conversation history'yi gönder
     const response =
-  await sendAssistantMessage(chatMessages, formData, location.pathname)
+      await sendAssistantMessage(chatMessages, activeFormData, location.pathname)
     
     response.actions?.forEach((action) => {
   console.log('AI Action:', action)

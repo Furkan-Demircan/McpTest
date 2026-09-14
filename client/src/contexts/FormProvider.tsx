@@ -1,7 +1,10 @@
 import React, { useState, type ReactNode } from 'react'
 import {
   FormContext,
-  initialFormData,
+  initialStudentFormData,
+  initialTeacherFormData,
+  type FormData,
+  type TeacherFormData,
 } from './FormContext'
 
 interface FormProviderProps {
@@ -11,14 +14,20 @@ interface FormProviderProps {
 export const FormProvider: React.FC<FormProviderProps> = ({
   children,
 }) => {
-  const [formData, setFormData] =
-    useState(initialFormData)
+  const [studentFormData, setStudentFormData] =
+    useState<FormData>(initialStudentFormData)
+  const [teacherFormData, setTeacherFormData] =
+    useState<TeacherFormData>(initialTeacherFormData)
 
   return (
     <FormContext.Provider
       value={{
-        formData,
-        setFormData,
+        formData: studentFormData,
+        setFormData: setStudentFormData,
+        studentFormData,
+        setStudentFormData,
+        teacherFormData,
+        setTeacherFormData,
       }}
     >
       {children}
