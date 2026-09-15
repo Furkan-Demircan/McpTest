@@ -1,87 +1,108 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type {
-    FormData,
-    TeacherFormData,
+  FormData,
+  TeacherFormData,
 } from '../../../contexts/FormContext'
-import { createStudentFormHandler } from '../../actions/forms/studentFormHandler'
-import { createTeacherFormHandler } from '../../actions/forms/teacherFormHandler'
+import { createGlobalFormHandler } from './globalFormHandler'
 import type { AiActionHandler } from '../types'
+import type { AiAction } from '../../../services/assistantApi'
 
-export type SupportedFormData =
-    | FormData
-    | TeacherFormData
+export type SupportedFormData = Record<string, unknown>
 
 interface FormRegistryItem {
-    type: 'student' | 'teacher'
-    paths: string[]
-    getFormData: () => SupportedFormData
-    getFormHandler: () => AiActionHandler
+  id: string
+  type: string
+  paths: string[]
+  getFormData: () => SupportedFormData
+  getFormHandler: () => AiActionHandler
 }
 
-interface CreateFormRegistryOptions {
-    studentFormData: FormData
-    teacherFormData: TeacherFormData
+export interface CreateFormRegistryOptions {
+  studentFormData?: FormData
+  teacherFormData?: TeacherFormData
+  setStudentFormData?: Dispatch<SetStateAction<FormData>>
+  setTeacherFormData?: Dispatch<SetStateAction<TeacherFormData>>
 
-    setStudentFormData: Dispatch<SetStateAction<FormData>>
-    setTeacherFormData: Dispatch<SetStateAction<TeacherFormData>>
+  // Dinamik ve global form desteği
+  getFormData?: (formIdOrPath: string) => Record<string, unknown> | undefined
+  patchFormData?: (formIdOrPath: string, patch: Record<string, unknown>) => void
+  getFormIdByPath?: (pathname: string) => string | undefined
 }
 
-export function createFormRegistry({
-    studentFormData,
-    teacherFormData,
-    setStudentFormData,
-    setTeacherFormData,
-}: CreateFormRegistryOptions) {
-    const studentFormHandler = createStudentFormHandler(setStudentFormData)
-    const teacherFormHandler = createTeacherFormHandler(setTeacherFormData)
+export function createFormRegistry(options: CreateFormRegistryOptions) {
+  // Eğer yeni dinamik FormContext metotları verildiyse onları kullan
+  if (options.patchFormData && options.getFormData && options.getFormIdByPath) {
+    const { patchFormData, getFormData, getFormIdByPath } = options
 
-    const forms: FormRegistryItem[] = [
-    {
-    paths: [
-        '/form',
-        '/ogrenci',
-        '/ogrenci-ekle',
-        '/student',
-    ],
-    type: 'student',
-    getFormData: () => studentFormData,
-    getFormHandler: () => studentFormHandler,
-    },
-    {
-    paths: [
-    '/teacher',
-    '/teacher-form',
-    '/ogretmen',
-    '/ogretmen-ekle',
-    ],
-    type: 'teacher',
-    getFormData: () => teacherFormData,
-    getFormHandler: () => teacherFormHandler,
-    },
-    ]
+    const globalHandler = createGlobalFormHandler({
+      patchFormData,
+      getActivePath: () => window.location.pathname,
+      getFormIdByPath,
+    })
 
     return {
-        getFormData(pathname: string): SupportedFormData | null {
-            const form = forms.find((item) =>
-                item.paths.includes(pathname)
-            )
+      getFormData(pathname: string): SupportedFormData | null {
+        return getFormData(pathname) ?? null
+      },
+      getFormType(pathname: string): string | null {
+        return getFormIdByPath(pathname) ?? null
+      },
+      getFormHandler(_pathname: string): AiActionHandler {
+        return globalHandler
+      },
+    }
+  }
 
-            return form?.getFormData() ?? null
-        },  
-        
-        getFormType(pathname: string) {
-            const form = forms.find((item) =>
-            item.paths.includes(pathname)
-        )
+  // Geriye dönük uyumluluk modu (fallback)
+  const studentFormHandler = (action: AiAction) => {
+    if (options.setStudentFormData && action.data) {
+      options.setStudentFormData((curr) => ({
+        ...curr,
+        ...action.data,
+        ...(action.data.tcNo ? { tcNo: String(action.data.tcNo).replace(/\D/g, '').slice(0, 11) } : {}),
+      }))
+    }
+  }
 
-        return form?.type ?? null
-        },
-        getFormHandler(pathname: string) {
-            const form = forms.find((item) =>
-                item.paths.includes(pathname)
-            )
+  const teacherFormHandler = (action: AiAction) => {
+    if (options.setTeacherFormData && action.data) {
+      options.setTeacherFormData((curr) => ({
+        ...curr,
+        ...action.data,
+        ...(action.data.tcNo ? { tcNo: String(action.data.tcNo).replace(/\D/g, '').slice(0, 11) } : {}),
+      }))
+    }
+  }
 
-            return form?.getFormHandler() ?? null
-        }
-}
+  const forms: FormRegistryItem[] = [
+    {
+      id: 'studentForm',
+      paths: ['/form', '/ogrenci', '/ogrenci-ekle', '/student', '/student-form', '/forma'],
+      type: 'student',
+      getFormData: () => (options.studentFormData ?? {}) as unknown as SupportedFormData,
+      getFormHandler: () => studentFormHandler,
+    },
+    {
+      id: 'teacherForm',
+      paths: ['/teacher', '/teacher-form', '/ogretmen', '/ogretmen-ekle'],
+      type: 'teacher',
+      getFormData: () => (options.teacherFormData ?? {}) as unknown as SupportedFormData,
+      getFormHandler: () => teacherFormHandler,
+    },
+  ]
+
+  return {
+    getFormData(pathname: string): SupportedFormData | null {
+      const form = forms.find((item) => item.paths.includes(pathname))
+      return form?.getFormData() ?? null
+    },
+    getFormType(pathname: string) {
+      const form = forms.find((item) => item.paths.includes(pathname))
+      return form?.type ?? null
+    },
+    getFormHandler(pathname: string) {
+      const form = forms.find((item) => item.paths.includes(pathname))
+      return form?.getFormHandler() ?? null
+    },
+  }
 }

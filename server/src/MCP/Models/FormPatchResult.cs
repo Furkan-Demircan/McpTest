@@ -4,9 +4,9 @@ public class FormPatchResult
 {
     public string Type { get; set; } = "form_patch";
 
-    public string Target { get; set; } = "studentForm";
+    public string? Target { get; set; }
 
-    public FormPatchData Data { get; set; } = new();
+    public Dictionary<string, object?> Data { get; set; } = new();
 }
 
 public class FormPatchData

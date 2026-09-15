@@ -10,7 +10,7 @@ import {useNavigate,useLocation} from 'react-router-dom'
 import { useFormContext } from '../contexts/useFormContext'
 import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
-import { createFormRegistry } from '../assistant/actions/forms/formRegistry'
+import { createGlobalFormHandler } from '../assistant/actions/forms/globalFormHandler'
 
 interface Message {
   id: string
@@ -107,20 +107,16 @@ export const AssistantWidget: React.FC = () => {
   const navigate = useNavigate()
   
   const {
-    studentFormData,
-    setStudentFormData,
-    teacherFormData,
-    setTeacherFormData,
+    getFormData,
+    patchFormData,
+    getFormIdByPath,
   } = useFormContext()
-  const formRegistry = createFormRegistry({
-    studentFormData,
-    teacherFormData,
-    setStudentFormData,
-    setTeacherFormData,
-  })
 
-  const formPatchHandler =
-    formRegistry.getFormHandler(location.pathname)
+  const formPatchHandler = createGlobalFormHandler({
+    patchFormData,
+    getActivePath: () => location.pathname,
+    getFormIdByPath,
+  })
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const baseTextRef = useRef<string>('')
@@ -131,11 +127,11 @@ export const AssistantWidget: React.FC = () => {
 
   const navigationHandler = createNavigationHandler(navigate)
 
-const actionHandlerRegistry =
-  createActionHandlerRegistry({
-    formPatchHandler: formPatchHandler ?? (() => {}),
-    navigationHandler,
-  })
+  const actionHandlerRegistry =
+    createActionHandlerRegistry({
+      formPatchHandler,
+      navigationHandler,
+    })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -341,7 +337,7 @@ const actionHandlerRegistry =
         content: message.text,
       }))
 
-    const activeFormData = formRegistry.getFormData(location.pathname) ?? {}
+    const activeFormData = getFormData(location.pathname) ?? {}
 
     // Tüm conversation history'yi gönder
     const response = await sendAssistantMessage(

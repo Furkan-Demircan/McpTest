@@ -9,6 +9,7 @@ public class ToolContextRegistry : IToolContextRegistry
         {
             ["get_current_page"] = AiToolContextType.Page,
             ["get_form_status"] = AiToolContextType.Form,
+            ["fill_form"] = AiToolContextType.Form,
             ["fill_student_form"] = AiToolContextType.Form,
             ["fill_teacher_form"] = AiToolContextType.Form
         };

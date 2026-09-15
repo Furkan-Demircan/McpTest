@@ -54,7 +54,7 @@ public class DeepSeekAiProvider : IAiProvider
             new
             {
                 role = "system",
-                content = $"""
+                content = """
                 Sen, kullanıcı yönetim ve kişisel bilgi formu sisteminde
                 çalışan bir yapay zeka asistanısın.
 
@@ -81,13 +81,11 @@ public class DeepSeekAiProvider : IAiProvider
 
                 Boş string değerleri doldurulmamış kabul et.
 
-                Kullanıcı öğrenci bilgisi verdiğinde veya öğrenci formundayken fill_student_form
-                tool'unu yalnızca yeni verilen bilgilerle çağır.
-
-                Kullanıcı öğretmen bilgisi (branş dahil) verdiğinde veya öğretmen formundayken fill_teacher_form
-                tool'unu yalnızca yeni verilen bilgilerle çağır.
-
-                Mevcut formda zaten bulunan bilgileri tekrar göndermene gerek yok.
+                Form doldurma / güncelleme kuralları:
+                - Kullanıcı herhangi bir form bilgisi verdiğinde (öğrenci, öğretmen, ders, kayıt veya sayfadaki herhangi bir form) MUTLAKA `fill_form` tool'unu çağır.
+                - 'values' nesnesi içerisine forma girilecek alan adlarını ve değerlerini key-value olarak ekle (Örn: {"firstName": "Ahmet", "tcNo": "12345678901", "birthDate": "2000-01-15"} veya {"branch": "Matematik"}).
+                - Eğer kullanıcının bulunduğu sayfa veya işlem yapılan form belirli ise 'target' parametresini ayarla (örn: "studentForm", "teacherForm"), aksi halde boş bırakabilirsin.
+                - Mevcut formda zaten bulunan değişmemiş bilgileri tekrar göndermene gerek yok, yalnızca yeni ve güncellenmiş bilgileri ilet.
                 """
             }
         };

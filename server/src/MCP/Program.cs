@@ -1,4 +1,3 @@
-using ModelContextProtocol.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 

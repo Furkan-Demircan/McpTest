@@ -2,8 +2,6 @@ using System.Text.Json;
 
 using Application.AI.Contracts;
 
-using Application.Mcp;
-
 using Application.MCP;
 
 namespace Application.AI;
@@ -126,6 +124,42 @@ public class AiAssistantService : IAiAssistantService
         if (tool == null)
         {
             return arguments;
+        }
+
+        if (toolCall.Name == "fill_form")
+        {
+            if (!arguments.ContainsKey("values"))
+            {
+                var values = new Dictionary<string, object?>();
+                string? target = null;
+
+                foreach (var kvp in arguments)
+                {
+                    if (kvp.Key.Equals("target", StringComparison.OrdinalIgnoreCase))
+                    {
+                        target = kvp.Value?.ToString();
+                    }
+                    else
+                    {
+                        values[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                arguments.Clear();
+                arguments["values"] = values;
+                if (!string.IsNullOrWhiteSpace(target))
+                {
+                    arguments["target"] = target;
+                }
+            }
+
+            if (!arguments.ContainsKey("target") || arguments["target"] is null)
+            {
+                if (currentPage is "/form" or "/ogrenci" or "/student" or "/ogrenci-ekle")
+                    arguments["target"] = "studentForm";
+                else if (currentPage is "/teacher" or "/ogretmen" or "/teacher-form" or "/ogretmen-ekle")
+                    arguments["target"] = "teacherForm";
+            }
         }
 
         _toolContextResolver.ApplyContext(
