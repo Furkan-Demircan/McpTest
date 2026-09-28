@@ -183,12 +183,15 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
 
 | Tool Name | Parameters | Description | Output Target |
 |---|---|---|---|
-| `fill_student_form` | `firstName`, `lastName`, `tcNo`, `email`, `motherName`, `fatherName`, `birthDate` | Patches the active Student Registration form on the UI with normalized values. | `target: "studentForm"` |
-| `fill_teacher_form` | `firstName`, `lastName`, `tcNo`, `email`, `branch`, `motherName`, `fatherName`, `birthDate` | Patches the active Teacher Registration form on the UI (including branch). | `target: "teacherForm"` |
-| `navigate_to_page` | `path` (`/`, `/form`, `/teacher`, `/users`) | Emits a navigation action to redirect the user's browser to the requested page. | `type: "navigation"` |
-| `get_current_page` | `currentPage` | Informs the AI of the user's current route location and page name. | Status string |
-| `get_form_status` | Form fields | Reports whether required form fields are currently populated or blank. | Status object |
-| `get_form_schema` | None | Returns the JSON schema of form field labels, types, and constraints. | Schema object |
+| `fill_form` | `values`, `target?` | Patches any registered form. Target and field names are validated against the app manifest; defaults to the form on the user's current page. | `type: "form_patch"` |
+| `navigate_to_page` | `page` (page id, path or alias) | Redirects the user to a manifest page; always emits the canonical path. | `type: "navigation"` |
+| `highlight_element` | `elementId`, `message?` | Scrolls to and highlights an on-screen element with a short hint. Rejected by the server if the element will not be visible to the user. | `type: "highlight"` |
+| `search_app_knowledge` | `query` | Searches the process guides in `server/src/MCP/Knowledge/*.md`. | Guides |
+| `get_page_schema` | `page` | Returns a page's elements and, if it has a form, its fields, rules and messages (from the manifest). | Schema object |
+| `list_app_pages` | None | Lists all pages in the manifest. | Page list |
+| `get_current_page` | `currentPage` (injected) | Returns the current page id, title and form. | Page object |
+
+**Single source of truth:** pages, routes, forms, fields, validation messages and element ids live in [`client/src/app/appManifest.ts`](client/src/app/appManifest.ts). `npm run manifest` (in `client/`) exports it to `server/src/MCP/Manifest/app-manifest.json`; `npm run manifest:check` fails if the JSON is stale, a manifest element id is missing from the JSX, or a knowledge guide references an unknown page/element (`[@elementId]`). On every request the client also sends a live snapshot of the visible interactive elements.
 
 ---
 
@@ -287,7 +290,7 @@ The floating AI assistant in the lower-right corner includes a microphone button
 - **Try it:** Click the microphone icon, say:
   > *"Adımı Mehmet, soyadımı Çelik, TC numaramı 12345678901 yap ve doğum tarihimi 15 Mayıs 1990 olarak ayarla"*
   
-  The assistant interprets the sentence, invokes `fill_student_form` or `fill_teacher_form`, and instantly populates the input fields on the screen!
+  The assistant interprets the sentence, invokes `fill_form`, and instantly populates the input fields on the screen!
 
 ---
 

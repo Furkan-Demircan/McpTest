@@ -76,7 +76,7 @@ flowchart LR
 
 4. **Sağ Altta Sabit Akıllı Asistan & Sesli Dikte**:
    - **Sesle Yazma (Speech-to-Text):** Tarayıcının Web Speech API altyapısını kullanarak Türkçe (`tr-TR`) sesli dikte desteği. Duraksamalarda dinlemeyi sürdürür ve konuşmayı metne çevirir.
-   - **MCP Araç Çağırma (Tool Calling) Döngüsü:** Kullanıcı *"Öğrencinin adını Ahmet, soyadını Kaya, doğum tarihini 2004-06-18 yap"* dediğinde, DeepSeek AI backend üzerinden MCP sunucusundaki `fill_student_form` veya `fill_teacher_form` aracını çağırır. Dönen `form_patch` aksiyonu istemcide form input'larını otomatik doldurur.
+   - **MCP Araç Çağırma (Tool Calling) Döngüsü:** Kullanıcı *"Öğrencinin adını Ahmet, soyadını Kaya, doğum tarihini 2004-06-18 yap"* dediğinde, DeepSeek AI backend üzerinden MCP sunucusundaki `fill_form` aracını çağırır. Dönen `form_patch` aksiyonu istemcide form input'larını otomatik doldurur.
    - **Sayfa Yönlendirme (Navigation Action):** Kullanıcı *"Beni öğretmen ekleme sayfasına götür"* dediğinde, asistan `navigate_to_page` aracı ile kullanıcıyı istemci tarafında `/teacher` sayfasına yönlendirir.
 
 5. **Model Context Protocol (MCP) Sunucusu**:
@@ -179,12 +179,15 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
 
 | Araç Adı | Parametreler | Açıklama | Hedef Çıktı |
 |---|---|---|---|
-| `fill_student_form` | `firstName`, `lastName`, `tcNo`, `email`, `motherName`, `fatherName`, `birthDate` | Öğrenci formundaki alanları normalize ederek doldurur veya günceller. | `target: "studentForm"` |
-| `fill_teacher_form` | `firstName`, `lastName`, `tcNo`, `email`, `branch`, `motherName`, `fatherName`, `birthDate` | Öğretmen formundaki alanları (branş dahil) normalize ederek doldurur. | `target: "teacherForm"` |
-| `navigate_to_page` | `path` (`/`, `/form`, `/teacher`, `/users`) | Kullanıcının tarayıcısını istenen sayfaya yönlendirir. | `type: "navigation"` |
-| `get_current_page` | `currentPage` | Kullanıcının anlık olarak hangi sayfada olduğunu asistana bildirir. | Sayfa adı metni |
-| `get_form_status` | Form alanları | Formdaki zorunlu alanların doluluk/boşluk durumunu raporlar. | Durum nesnesi |
-| `get_form_schema` | Yok | Form alanlarının isim, etiket ve tür şemasını döner. | Şema nesnesi |
+| `fill_form` | `values`, `target?` | Kayıtlı herhangi bir formu doldurur. Hedef form ve alan adları manifest'e karşı doğrulanır; hedef verilmezse kullanıcının bulunduğu sayfanın formu kullanılır. | `type: "form_patch"` |
+| `navigate_to_page` | `page` (sayfa kimliği, path veya alias) | Kullanıcıyı manifest'teki bir sayfaya yönlendirir; istemciye her zaman kanonik path gider. | `type: "navigation"` |
+| `highlight_element` | `elementId`, `message?` | Ekrandaki bir elemana kaydırıp vurgular, yanında kısa not gösterir. Eleman kullanıcının göreceği ekranda değilse sunucu reddeder. | `type: "highlight"` |
+| `search_app_knowledge` | `query` | `server/src/MCP/Knowledge/*.md` süreç rehberlerinde arar. | Rehberler |
+| `get_page_schema` | `page` | Sayfanın elemanlarını, form varsa alanlarını, kurallarını ve mesajlarını (manifest'ten) döner. | Şema nesnesi |
+| `list_app_pages` | Yok | Manifest'teki tüm sayfaları listeler. | Sayfa listesi |
+| `get_current_page` | `currentPage` (enjekte edilir) | Bulunulan sayfanın kimliğini, adını ve formunu döner. | Sayfa nesnesi |
+
+**Tek kaynak:** sayfalar, route'lar, formlar, alanlar, validasyon mesajları ve eleman kimlikleri [`client/src/app/appManifest.ts`](client/src/app/appManifest.ts) içindedir. `client/` altında `npm run manifest` bunu `server/src/MCP/Manifest/app-manifest.json`'a aktarır; `npm run manifest:check` JSON bayatsa, manifest'teki bir eleman kimliği JSX'te yoksa veya bir rehber bilinmeyen bir sayfa/elemana (`[@elemanId]`) referans veriyorsa hata verir. İstemci ayrıca her istekte ekranda görünen etkileşimli elemanların özetini gönderir.
 
 ---
 
@@ -282,7 +285,7 @@ Sağ alttaki akıllı asistan widget'ında bulunan mikrofon ikonu **Web Speech A
 - **Örnek Kullanım:** Mikrofona tıklayın ve söyleyin:
   > *"Öğrenci adı Ayşe, soyadı Yılmaz, TC kimlik numarası 11223344556, doğum tarihi 12 Nisan 2003 olsun"*
   
-  Asistan söylediklerinizi analiz eder, MCP `fill_student_form` aracını çağırır ve ekrandaki formu anında otomatik olarak doldurur!
+  Asistan söylediklerinizi analiz eder, MCP `fill_form` aracını çağırır ve ekrandaki formu anında otomatik olarak doldurur!
 
 ---
 
