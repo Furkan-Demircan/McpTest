@@ -12,7 +12,16 @@ public class PageSchemaResult
 
 public class AppPagesResult
 {
+    public int TotalPages { get; set; }
+    public List<AppModuleSummary> Modules { get; set; } = [];
     public List<AppPageSummary> Pages { get; set; } = [];
+    public string? Hint { get; set; }
+}
+
+public class AppModuleSummary
+{
+    public string Name { get; set; } = string.Empty;
+    public int PageCount { get; set; }
 }
 
 public class AppPageSummary

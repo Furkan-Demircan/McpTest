@@ -27,15 +27,35 @@ public static class ApplicationInfoTools
         };
     }
 
+    // Büyük uygulamada (yüzlerce sayfa) tool cevabını küçük tutmak için üst sınır
+    private const int MaxPageResults = 10;
+
     [McpServerTool(UseStructuredContent = true)]
     [Description(
-    "Uygulamadaki tüm sayfaları (kimlik, path, başlık, açıklama, bağlı form) listeler. " +
-    "Hangi sayfaya gidileceğinden emin değilsen kullan.")]
-    public static AppPagesResult ListAppPages(AppManifestStore manifest)
+    "Uygulamadaki sayfaları arar. Hangi sayfaya gidileceğini veya bir işlemin hangi sayfada " +
+    "yapıldığını bilmiyorsan kullan. 'query' ile konuya göre en ilgili sayfaları, 'module' ile bir " +
+    "modülün sayfalarını döner. Parametresiz çağrı modül listesini döner (sayfa sayısı azsa sayfaları da).")]
+    public static AppPagesResult ListAppPages(
+        AppManifestStore manifest,
+        [Description("Aranan konu, örn: 'öğretmen ekleme', 'kayıt listesi'.")]
+        string? query = null,
+        [Description("Modül adı, örn: 'Okul'. Modül listesi için parametresiz çağır.")]
+        string? module = null)
     {
+        var total = manifest.Manifest.Pages.Count;
+        var browseAll = string.IsNullOrWhiteSpace(query) && string.IsNullOrWhiteSpace(module);
+
+        var pages = browseAll && total > MaxPageResults
+            ? []
+            : manifest.SearchPages(query, module, MaxPageResults);
+
         return new AppPagesResult
         {
-            Pages = manifest.Manifest.Pages
+            TotalPages = total,
+            Modules = manifest.Modules()
+                .Select(item => new AppModuleSummary { Name = item.Module, PageCount = item.PageCount })
+                .ToList(),
+            Pages = pages
                 .Select(page => new AppPageSummary
                 {
                     Id = page.Id,
@@ -45,7 +65,12 @@ public static class ApplicationInfoTools
                     Module = page.Module,
                     FormId = page.FormId
                 })
-                .ToList()
+                .ToList(),
+            Hint = pages.Count == 0
+                ? browseAll
+                    ? "Sayfa çok; 'query' veya 'module' ile ara."
+                    : "Eşleşen sayfa yok; farklı kelimelerle veya modül adıyla dene."
+                : null
         };
     }
 

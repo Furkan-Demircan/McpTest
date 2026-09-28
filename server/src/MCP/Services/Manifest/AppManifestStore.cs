@@ -7,6 +7,7 @@ namespace MCP.Server.Manifest;
 public class AppManifestStore
 {
     private readonly Dictionary<string, ManifestElement> _elements;
+    private readonly List<(PageDefinition Page, HashSet<string> Tokens)> _pageIndex;
 
     public AppManifestStore(AppManifest manifest)
     {
@@ -20,6 +21,12 @@ public class AppManifestStore
                 new ManifestElement(field.ElementId, field.Label, "field", form.PageId))))
             .GroupBy(element => element.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        _pageIndex = manifest.Pages
+            .Select(page => (page, TurkishText.Tokenize(string.Join(' ',
+                new[] { page.Title, page.Description, page.NavLabel ?? string.Empty, page.Module }
+                    .Concat(FindForm(page.FormId)?.Fields.Select(field => field.Label) ?? [])))))
+            .ToList();
     }
 
     public AppManifest Manifest { get; }
@@ -46,6 +53,39 @@ public class AppManifestStore
 
     public ManifestElement? FindElement(string elementId) =>
         _elements.GetValueOrDefault(elementId);
+
+    public IReadOnlyList<(string Module, int PageCount)> Modules() =>
+        Manifest.Pages
+            .GroupBy(page => page.Module)
+            .Select(group => (group.Key, group.Count()))
+            .ToList();
+
+    /// <summary>
+    /// Sayfaları sorguya göre sıralar (başlık, açıklama, menü etiketi, modül, alan etiketleri).
+    /// Sorgu boşsa modül filtresine uyan sayfaları sırasıyla döner.
+    /// </summary>
+    public IReadOnlyList<PageDefinition> SearchPages(string? query, string? module, int maxResults)
+    {
+        var candidates = _pageIndex.Where(entry =>
+            string.IsNullOrWhiteSpace(module) ||
+            entry.Page.Module.Equals(module, StringComparison.OrdinalIgnoreCase));
+
+        var queryTokens = string.IsNullOrWhiteSpace(query) ? [] : TurkishText.QueryTokens(query);
+
+        if (queryTokens.Count == 0)
+        {
+            return candidates.Select(entry => entry.Page).Take(maxResults).ToList();
+        }
+
+        return candidates
+            .Select(entry => (entry.Page, Score: queryTokens.Count(token =>
+                entry.Tokens.Any(pageToken => TurkishText.IsMatch(token, pageToken)))))
+            .Where(match => match.Score > 0)
+            .OrderByDescending(match => match.Score)
+            .Take(maxResults)
+            .Select(match => match.Page)
+            .ToList();
+    }
 
     private static string NormalizePath(string path)
     {
