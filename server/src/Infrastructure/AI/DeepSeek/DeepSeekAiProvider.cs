@@ -92,7 +92,11 @@ public class DeepSeekAiProvider : IAiProvider
                   bir personele anlatır gibi, teknik terim kullanmadan.
                 - Kullanıcı işlemi şimdi yapmak istiyorsa (örn. "yeni öğrenci eklemem lazım,
                   nasıl yapacağımı bilmiyorum"): gerekiyorsa rehberdeki sayfa kimliğiyle
-                  `navigate_to_page` ile ilgili sayfaya götür.
+                  `navigate_to_page` çağır, ardından `highlight_element` ile başlaması gereken
+                  ilk alanı işaretle. Zaten o sayfadaysa sadece işaretle.
+                - highlight_element kimliğini uydurma: rehberdeki [id: ...] veya get_page_schema'dan al.
+                - Tool çağrılarını gereksiz yere tek tek yapma; birbirine bağlı olmayanları
+                  (örn. navigate_to_page + highlight_element) aynı turda birlikte çağır.
                 - Anlatımın sonunda bilgileri sana yazarak veya sesle söyleyerek formu
                   doldurtabileceğini, ama kaydet butonuna kendisinin basması gerektiğini hatırlat.
                 - Kullanıcı sadece bilgi istiyorsa (işlem yapmak istediği belli değilse)

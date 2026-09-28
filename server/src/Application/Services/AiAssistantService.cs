@@ -244,6 +244,7 @@ public class AiAssistantService : IAiAssistantService
             AiActionTypes.FormPatch => true,
             AiActionTypes.Navigation => true,
             AiActionTypes.Notification => true,
+            AiActionTypes.Highlight => true,
             _ => false
         };
     }

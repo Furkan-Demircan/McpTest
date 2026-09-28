@@ -4,6 +4,7 @@ import type { AiActionHandler } from './types'
 interface ActionHandlerRegistryOptions {
   formPatchHandler: AiActionHandler
   navigationHandler: AiActionHandler
+  highlightHandler: AiActionHandler
 }
 
 export interface ActionHandleResult {
@@ -15,10 +16,12 @@ export interface ActionHandleResult {
 export function createActionHandlerRegistry({
   formPatchHandler,
   navigationHandler,
+  highlightHandler,
 }: ActionHandlerRegistryOptions) {
   const handlers: Record<string, AiActionHandler> = {
     form_patch: formPatchHandler,
     navigation: navigationHandler,
+    highlight: highlightHandler,
   }
 
   return {

@@ -14,6 +14,7 @@ import {
   type ActionHandleResult,
 } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
+import { createHighlightHandler } from '../assistant/actions/highlightHandler'
 import { createGlobalFormHandler } from '../assistant/actions/forms/globalFormHandler'
 import { AssistantTrace } from './AssistantTrace'
 
@@ -135,11 +136,13 @@ export const AssistantWidget: React.FC = () => {
   const isSpeechSupported = typeof window !== 'undefined' && Boolean(getSpeechRecognition())
 
   const navigationHandler = createNavigationHandler(navigate)
+  const highlightHandler = createHighlightHandler()
 
   const actionHandlerRegistry =
     createActionHandlerRegistry({
       formPatchHandler,
       navigationHandler,
+      highlightHandler,
     })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)

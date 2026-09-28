@@ -314,6 +314,51 @@
   opacity: 0.6;
 }
 
+/* Asistanın sayfada işaretlediği eleman (highlight aksiyonu) */
+.assistant-highlight {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 3px;
+  border-radius: 8px;
+  animation: assistantHighlightPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes assistantHighlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(170, 59, 255, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(170, 59, 255, 0);
+  }
+}
+
+.assistant-highlight-hint {
+  position: fixed;
+  z-index: 9998;
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 8px 20px -6px rgba(170, 59, 255, 0.6);
+  pointer-events: none;
+  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.assistant-highlight-hint::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 18px;
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: var(--accent) transparent transparent;
+}
+
 /* Yazıyor Noktaları */
 .typing-bubble {
   display: inline-flex;
