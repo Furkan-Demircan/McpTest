@@ -1,7 +1,7 @@
 # 🎓 School & User Management System with AI Assistant (MCP)
 
 [![Language](https://img.shields.io/badge/Language-English-blue.svg)](#) [![Turkish](https://img.shields.io/badge/Dokümantasyon-Türkçe-red.svg)](README_TR.md)
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-512bd4.svg?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512bd4.svg?logo=dotnet)](https://dotnet.microsoft.com/)
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb.svg?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1.svg?logo=postgresql)](https://www.postgresql.org/)
@@ -27,14 +27,14 @@ flowchart LR
         ActionReg["Action Registry (Form Patch / Nav)"]
     end
 
-    subgraph Backend [".NET 8 Clean Architecture API"]
+    subgraph Backend [".NET 10 Clean Architecture API"]
         API["REST Controllers"]
         AI_Svc["AI Assistant Service"]
         User_Svc["User Service"]
         EF["Entity Framework Core"]
     end
 
-    subgraph MCP_Server ["MCP Server (.NET 8)"]
+    subgraph MCP_Server ["MCP Server (.NET 10)"]
         MCP_Tools["MCP Tools (FormTools, NavTools)"]
     end
 
@@ -81,7 +81,7 @@ flowchart LR
    - **Navigation Action**: The AI can programmatically redirect users (*e.g., "Take me to the teacher page"* triggers client-side navigation to `/teacher`).
 
 5. **Model Context Protocol (MCP) Server**:
-   - Modular MCP microservice running on port `5001` with Streamable HTTP transport (`/mcp`).
+   - MCP endpoint hosted by the API with Streamable HTTP transport (`/mcp`).
    - Standardized tools for page identification, dynamic form schemas, form status checks, student form patching, and teacher form patching.
 
 ---
@@ -95,7 +95,7 @@ flowchart LR
 - **Voice Recognition:** Web Speech API (`webkitSpeechRecognition` / `SpeechRecognition`) with auto-reconnection and continuous streaming
 - **Styling:** Modern responsive CSS with custom design tokens, dark/light theme variables, glassmorphism, and responsive grid layouts
 
-### B. Backend (.NET 8 Clean Architecture)
+### B. Backend (.NET 10 Clean Architecture)
 Organized into 4 decoupled layers adhering to Clean / Hexagonal Architecture:
 - **`Domain`**: Pure business layer with zero third-party dependencies.
   - Entities: `User` entity containing encapsulation and domain validation.
@@ -118,7 +118,7 @@ Organized into 4 decoupled layers adhering to Clean / Hexagonal Architecture:
   - Swagger / OpenAPI UI at root (`/`).
 
 ### C. MCP Server (`server/src/MCP`)
-- Standalone ASP.NET Core service implementing the Model Context Protocol.
+- Hosted by the API ASP.NET Core process, implementing the Model Context Protocol.
 - Exposes tools via `ModelContextProtocol.Server` over HTTP transport.
 
 ### D. Database & Containers
@@ -131,7 +131,7 @@ Organized into 4 decoupled layers adhering to Clean / Hexagonal Architecture:
 
 ```text
 McpTest/
-├── docker-compose.yml              # PostgreSQL, Backend API & MCP Server orchestrator
+├── docker-compose.yml              # PostgreSQL and Backend API orchestrator (with hosted MCP endpoint)
 ├── .env.example                    # Template environment variables
 ├── README.md                       # English documentation (this file)
 ├── README_TR.md                    # Turkish documentation
@@ -165,7 +165,7 @@ McpTest/
 │   ├── package.json
 │   └── vite.config.ts
 │
-└── server/                         # .NET 8 Backend Solution
+└── server/                         # .NET 10 Backend Solution
     ├── UserManagement.sln
     └── src/
         ├── Domain/                 # Entities, Domain Rules, Repository Interfaces
@@ -213,7 +213,7 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
 
 ### Prerequisites
 - [Docker & Docker Desktop](https://www.docker.com/) (Recommended)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 20+](https://nodejs.org/) or [Bun](https://bun.sh/)
 - A valid [DeepSeek API Key](https://platform.deepseek.com/)
 
@@ -244,7 +244,7 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
    This launches:
    - **PostgreSQL 16:** `localhost:5432`
    - **Backend Web API:** `http://localhost:5000` (Swagger UI available at [http://localhost:5000](http://localhost:5000))
-   - **MCP Server:** `http://localhost:5001/mcp`
+   - **MCP Server:** `http://localhost:5000/mcp` (hosted by the Backend Web API)
 
 3. **Start the Frontend:**
    ```powershell
@@ -261,21 +261,14 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
 #### 1. Start PostgreSQL
 Ensure PostgreSQL is running locally on port `5432` with database `usermanagement_db`.
 
-#### 2. Start MCP Server
-```powershell
-cd server/src/MCP
-dotnet run --launch-profile http
-```
-*Listens on `http://localhost:5001`.*
-
-#### 3. Start Backend API
+#### 2. Start the Backend API and Hosted MCP Endpoint
 ```powershell
 cd server/src/API
 dotnet run --launch-profile API
 ```
-*Listens on `http://localhost:5000`.*
+*The API listens on `http://localhost:5000`; its MCP endpoint is available at `http://localhost:5000/mcp`.*
 
-#### 4. Start Frontend
+#### 3. Start Frontend
 ```powershell
 cd client
 bun install

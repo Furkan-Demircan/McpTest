@@ -1,27 +1,43 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace MCP;
 
-builder.Services.AddCors(options =>
+public static class McpServerHost
 {
-    options.AddPolicy("McpBrowserClient", policy =>
+    public static void Main(string[] args)
     {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .WithExposedHeaders("Mcp-Session-Id");
-    });
-});
+        var builder = WebApplication.CreateBuilder(args);
+        ConfigureServices(builder);
 
-builder.Services
-    .AddMcpServer()
-    .WithHttpTransport()
-    .WithToolsFromAssembly();
+        var app = builder.Build();
+        ConfigureApplication(app);
+        app.Run();
+    }
 
-var app = builder.Build();
+    public static void ConfigureServices(WebApplicationBuilder builder)
+    {
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("McpBrowserClient", policy =>
+            {
+                policy
+                    .AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .WithExposedHeaders("Mcp-Session-Id");
+            });
+        });
 
-app.UseCors();
+        builder.Services
+            .AddMcpServer()
+            .WithHttpTransport()
+            .WithToolsFromAssembly();
+    }
 
-app.MapMcp("/mcp");
-
-app.Run();
+    public static void ConfigureApplication(WebApplication app)
+    {
+        app.UseCors("McpBrowserClient");
+        app.MapMcp("/mcp");
+    }
+}

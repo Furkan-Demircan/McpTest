@@ -2,6 +2,7 @@ using API.Middlewares;
 using Application;
 using Application.AI;
 using Application.MCP;
+using Application.MCP.Tools;
 using Infrastructure;
 using Infrastructure.MCP;
 using Infrastructure.Persistence;
@@ -12,6 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Katman Bağımlılıkları (Clean Architecture DI)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+// MCP sunucusunu API ile aynı işlemde yayınla.
+builder.Services
+    .AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly(typeof(FormTools).Assembly);
 
 
 // MCP Client Yapılandırması
@@ -57,7 +63,8 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .WithExposedHeaders("Mcp-Session-Id");
     });
 });
 
@@ -97,5 +104,6 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapMcp("/mcp");
 
 app.Run();

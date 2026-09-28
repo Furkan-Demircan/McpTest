@@ -6,7 +6,7 @@ Bu doküman; geliştirilen **Kişisel Bilgi ve Kullanıcı Yönetim Sistemi**'ni
 
 ## 🎯 1. Projenin Amacı
 
-Bu projenin temel amacı; kullanıcıların kişisel bilgilerini (Ad, Soyad, TC Kimlik Numarası, E-posta, Anne Adı, Baba Adı ve Doğum Tarihi) modern, kullanıcı dostu ve doğrulamalı bir web arayüzü üzerinden toplamak; bu verileri kurumsal düzeyde kabul gören **Clean Architecture** (Temiz Mimari) prensiplerine sahip bir **.NET 8 REST API** servisi üzerinden doğrulayıp **PostgreSQL** veritabanında güvenli ve tutarlı bir şekilde saklamak ve gerektiğinde anlık arama-filtreleme yetenekleriyle listeleyebilmektir.
+Bu projenin temel amacı; kullanıcıların kişisel bilgilerini (Ad, Soyad, TC Kimlik Numarası, E-posta, Anne Adı, Baba Adı ve Doğum Tarihi) modern, kullanıcı dostu ve doğrulamalı bir web arayüzü üzerinden toplamak; bu verileri kurumsal düzeyde kabul gören **Clean Architecture** (Temiz Mimari) prensiplerine sahip bir **.NET 10 REST API** servisi üzerinden doğrulayıp **PostgreSQL** veritabanında güvenli ve tutarlı bir şekilde saklamak ve gerektiğinde anlık arama-filtreleme yetenekleriyle listeleyebilmektir.
 
 ---
 
@@ -21,7 +21,7 @@ Sistem, modern kurumsal yazılım standartları gözetilerek **Frontend**, **Bac
 * **Paket Yöneticisi:** Bun / npm
 
 ### B. Backend (Sunucu Katmanı - Clean Architecture)
-* **Framework:** .NET 8 (C# - ASP.NET Core Web API)
+* **Framework:** .NET 10 (C# - ASP.NET Core Web API)
 * **Mimari Prensipleri:** Clean Architecture (Onion / Hexagonal Architecture yaklaşımı)
   * **Domain Katmanı (`src/Domain`):** Dış dünyadan tamamen bağımsız çekirdek katman. `User` Entity'si, domain kural doğrulamaları (TC No formatı, gelecek tarih engelleme vb.) ve `IUserRepository` arayüzü.
   * **Application Katmanı (`src/Application`):** İş kuralları ve kullanım senaryoları (Use Cases). DTO modelleri (`CreateUserDto`, `UserResponseDto`), servis arayüzleri ve `UserService` (TC No ve E-posta benzersizlik kontrolleri).
@@ -153,7 +153,7 @@ McpTest/
 │       │   └── main.tsx
 │       └── package.json
 │
-└── server/                     # Clean Architecture Backend Servisi (.NET 8)
+└── server/                     # Clean Architecture Backend Servisi (.NET 10)
     ├── UserManagement.sln
     └── src/
         ├── Domain/             # Varlıklar, arayüzler ve domain kuralları

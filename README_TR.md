@@ -1,7 +1,7 @@
 # 🎓 Yapay Zeka Asistanlı (MCP) Okul & Kullanıcı Yönetim Sistemi
 
 [![Dokümantasyon](https://img.shields.io/badge/Dokümantasyon-Türkçe-red.svg)](#) [![English](https://img.shields.io/badge/Language-English-blue.svg)](README.md)
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-512bd4.svg?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512bd4.svg?logo=dotnet)](https://dotnet.microsoft.com/)
 [![React 19](https://img.shields.io/badge/React-19.0-61dafb.svg?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1.svg?logo=postgresql)](https://www.postgresql.org/)
@@ -27,14 +27,14 @@ flowchart LR
         ActionReg["Action Registry (Form Patch / Navigasyon)"]
     end
 
-    subgraph Backend [".NET 8 Clean Architecture API"]
+    subgraph Backend [".NET 10 Clean Architecture API"]
         API["REST Denetleyicileri"]
         AI_Svc["AI Asistan Servisi"]
         User_Svc["Kullanıcı Servisi"]
         EF["Entity Framework Core"]
     end
 
-    subgraph MCP_Server ["MCP Sunucusu (.NET 8)"]
+    subgraph MCP_Server ["MCP Sunucusu (.NET 10)"]
         MCP_Tools["MCP Araçları (FormTools, NavTools)"]
     end
 
@@ -94,7 +94,7 @@ flowchart LR
 * **Ses Tanıma:** Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`)
 * **Tasarım:** Modern, cam efektli (glassmorphism), responsive CSS ve CSS değişkenleri
 
-### B. Backend (.NET 8 Clean Architecture)
+### B. Backend (.NET 10 Clean Architecture)
 Clean Architecture prensiplerine göre ayrılmış 4 katman:
 * **`Domain Katmanı`**: Dış bağımlılığı olmayan çekirdek katman.
   * Varlıklar: `User` entity'si ve domain kuralları (11 hane TC kontrolü, e-posta formatı, gelecek tarih engelleme).
@@ -161,7 +161,7 @@ McpTest/
 │   ├── package.json
 │   └── vite.config.ts
 │
-└── server/                         # .NET 8 Temiz Mimari Backend Çözümü
+└── server/                         # .NET 10 Temiz Mimari Backend Çözümü
     ├── UserManagement.sln
     └── src/
         ├── Domain/                 # Varlıklar, Domain Doğrulamaları, Repository Arayüzleri
@@ -209,7 +209,7 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
 
 ### Gereksinimler
 - [Docker & Docker Desktop](https://www.docker.com/) (Önerilen)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 20+](https://nodejs.org/) veya [Bun](https://bun.sh/)
 - Geçerli bir [DeepSeek API Key](https://platform.deepseek.com/)
 
@@ -240,7 +240,7 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
    Servisler hazır olduğunda:
    - **PostgreSQL 16:** `localhost:5432`
    - **Backend Web API:** `http://localhost:5000` (Swagger UI: [http://localhost:5000](http://localhost:5000))
-   - **MCP Server:** `http://localhost:5001/mcp`
+   - **MCP Server:** `http://localhost:5000/mcp`
 
 3. **Frontend Uygulamasını Başlatın:**
    ```powershell
@@ -257,21 +257,13 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
 #### 1. PostgreSQL Servisini Başlatın
 PostgreSQL'in yerel olarak `5432` portunda çalıştığından ve `usermanagement_db` veritabanının mevcut olduğundan emin olun.
 
-#### 2. MCP Sunucusunu Başlatın
-```powershell
-cd server/src/MCP
-dotnet run --launch-profile http
-```
-*`http://localhost:5001` üzerinde dinler.*
-
-#### 3. Backend API'yi Başlatın
+#### 2. Backend API ve Dahili MCP Uç Noktasını Başlatın
 ```powershell
 cd server/src/API
 dotnet run --launch-profile API
 ```
-*`http://localhost:5000` üzerinde dinler.*
-
-#### 4. Frontend Uygulamasını Başlatın
+*API `http://localhost:5000` adresinde, MCP uç noktası ise `http://localhost:5000/mcp` adresinde kullanılabilir.*
+#### 3. Frontend Uygulamasını Başlatın
 ```powershell
 cd client
 bun install
