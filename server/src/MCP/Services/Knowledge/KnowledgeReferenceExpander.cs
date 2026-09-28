@@ -4,9 +4,10 @@ using MCP.Server.Manifest;
 namespace MCP.Server.Knowledge;
 
 /// <summary>
-/// Rehberlerdeki [@elemanId] referanslarını manifest'teki güncel etikete çevirir:
-/// [@studentSubmit] → "Öğrenciyi Kaydet" butonu [id: studentSubmit]
-/// Etiket UI'da değişirse rehber elle güncellenmeden doğru kalır.
+/// Rehberlerdeki [@referans] işaretlerini asistanın kullanabileceği kimliğe çevirir:
+/// - Katalog elemanı: [@studentSubmit] → "Öğrenciyi Kaydet" butonu [id: studentSubmit]
+/// - Form alanı (Swagger): [@firstName] → [alan: firstName]; alanın etiketini rehber
+///   metni kendisi yazar, çünkü Swagger sözleşmedir, kullanım dili değil.
 /// </summary>
 public static partial class KnowledgeReferenceExpander
 {
@@ -19,9 +20,12 @@ public static partial class KnowledgeReferenceExpander
         {
             // Aynı alan adı birden fazla formda olabilir; rehberin sayfalarında ara
             var element = manifest.FindElement(match.Groups[1].Value, document.Pages);
-            return element is null
-                ? match.Value
-                : $"\"{element.Label}\" {KindLabel(element.Kind)} [id: {element.Id}]";
+            return element switch
+            {
+                null => match.Value,
+                { Label: null } => $"[alan: {element.Id}]",
+                _ => $"\"{element.Label}\" {KindLabel(element.Kind)} [id: {element.Id}]"
+            };
         });
 
         return new KnowledgeDocument

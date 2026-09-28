@@ -8,8 +8,8 @@ Yeni öğretmen, Öğretmen Ekleme Formu üzerinden kaydedilir.
 
 ## Adımlar
 1. Ana sayfada [@homeTeacherLink] butonuna tıklayın.
-2. Formdaki tüm alanları doldurun; hepsi zorunludur. İlk alan [@firstName].
-3. [@branch] için listede olmayan bir branş varsa elle yazabilirsiniz.
+2. Formdaki tüm alanları doldurun; hepsi zorunludur. İlk alan "Öğretmen Adı" [@firstName].
+3. "Branş / Uzmanlık Alanı" [@branch]: yanındaki hazır listeden seçilebilir; listede olmayan bir branş elle de yazılabilir.
 4. [@teacherSubmit] butonuna basın.
 
 ## Bilinmesi gerekenler

@@ -14,9 +14,10 @@ public static class KnowledgeTools
     "Uygulamanın kullanım rehberlerinde arama yapar. " +
     "Kullanıcı bir işlemin NASIL yapılacağını sorduğunda, bir şeyi bilmediğini/bulamadığını söylediğinde, " +
     "bir hata aldığında veya uygulamanın bir özelliğini sorduğunda cevap vermeden ÖNCE MUTLAKA çağrılmalıdır. " +
-    "Rehberler süreç bilgisini (adım sırası, iş kuralları, bilinen kısıtlar) içerir; ekran elemanları " +
-    "'\"Etiket\" butonu [id: ...]' biçiminde geçer ve bu kimlikler highlight_element ile kullanılabilir. " +
-    "Alan listesi ve validasyon kuralları rehberde yoktur; onlar için get_page_schema kullanılır.")]
+    "Rehberler kullanım bilgisini (adım sırası, iş kuralları, bilinen kısıtlar, ekrandaki adlandırmalar) içerir; " +
+    "ekran elemanları '\"Etiket\" butonu [id: ...]', form alanları '[alan: ...]' biçiminde geçer ve bu kimlikler " +
+    "highlight_element / fill_fields ile kullanılabilir. Alanların tip ve kuralları (sözleşme) rehberde yoktur; " +
+    "onlar için get_page_schema kullanılır.")]
     public static KnowledgeSearchResult SearchAppKnowledge(
         IKnowledgeRetriever retriever,
         AppManifestStore manifest,

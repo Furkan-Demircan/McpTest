@@ -76,10 +76,11 @@ public static class ApplicationInfoTools
 
     [McpServerTool(UseStructuredContent = true)]
     [Description(
-    "Bir sayfanın yapısını döndürür: ekran elemanları (kimlik + etiket) ve sayfada form varsa " +
-    "alanları, etiketleri, zorunlulukları, validasyon kuralları/mesajları ve ekran kimlikleri. " +
-    "Kullanıcının BULUNMADIĞI bir sayfanın alanlarını anlatırken veya o sayfadaki bir elemanı " +
-    "işaretlemeden önce kullan. Bulunduğu sayfanın elemanları zaten ekran özetinde gelir.")]
+    "Bir sayfanın SÖZLEŞMESİNİ döndürür: katalogdaki ekran elemanları (kimlik + etiket) ve sayfa bir " +
+    "endpoint'e gönderiyorsa o endpoint'in Swagger şemasından alan adları, tipleri, zorunluluklar ve kurallar. " +
+    "Alan etiketi, kullanım talimatı veya iş kuralı İÇERMEZ; 'nasıl yapılır / neden' için search_app_knowledge kullan. " +
+    "Kullanıcının BULUNMADIĞI bir sayfanın alanlarını bilmen gerektiğinde veya o sayfaya yazmadan/işaretlemeden " +
+    "önce kullan. Bulunduğu sayfanın elemanları ve etiketleri zaten ekran özetinde gelir.")]
     public static PageSchemaResult GetPageSchema(
         AppManifestStore manifest,
         [Description("Sayfa kimliği (örn: 'student-create') veya path (örn: '/teacher').")]

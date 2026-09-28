@@ -19,14 +19,15 @@ public class AppManifestStore
             .SelectMany(page => page.Elements.Select(element =>
                 new ManifestElement(element.Id, element.Label, element.Kind, page.Id)))
             .Concat(manifest.Forms.SelectMany(form => form.Fields.Select(field =>
-                new ManifestElement(field.ElementId, field.Label, "field", form.PageId))))
+                new ManifestElement(field.ElementId, null, "field", form.PageId))))
             .GroupBy(element => element.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
+        // Sayfa araması katalogdaki metinlerle yapılır (başlık, açıklama, modül, eleman etiketleri)
         _pageIndex = manifest.Pages
             .Select(page => (page, TurkishText.Tokenize(string.Join(' ',
                 new[] { page.Title, page.Description, page.Module }
-                    .Concat(FindForm(page.FormId)?.Fields.Select(field => field.Label) ?? [])))))
+                    .Concat(page.Elements.Select(element => element.Label))))))
             .ToList();
     }
 
@@ -76,7 +77,7 @@ public class AppManifestStore
             .ToList();
 
     /// <summary>
-    /// Sayfaları sorguya göre sıralar (başlık, açıklama, menü etiketi, modül, alan etiketleri).
+    /// Sayfaları sorguya göre sıralar (başlık, açıklama, modül, eleman etiketleri).
     /// Sorgu boşsa modül filtresine uyan sayfaları sırasıyla döner.
     /// </summary>
     public IReadOnlyList<PageDefinition> SearchPages(string? query, string? module, int maxResults)

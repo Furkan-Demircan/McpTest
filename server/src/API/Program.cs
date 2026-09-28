@@ -56,8 +56,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    // [Display] etiketlerini şemaya yazar; asistan başka sayfaların alanlarını bu etiketlerle anlatır
-    c.SchemaFilter<DisplaySchemaFilter>();
 
     c.SwaggerDoc("v1", new()
     {

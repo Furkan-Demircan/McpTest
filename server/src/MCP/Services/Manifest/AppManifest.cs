@@ -5,7 +5,10 @@ namespace MCP.Server.Manifest;
 // (API/Forms/AppManifestBuilder):
 // - Sayfa kataloğu (client/src/app/aiPages.ts → Manifest/app-pages.json): sayfalar,
 //   path'ler, sayfa elemanları ve sayfanın gönderdiği endpoint
-// - Swagger: endpoint'in request body şemasından formun alanları ve kuralları
+// - Swagger (sadece sözleşme): endpoint'in request body'sindeki alan adları, tipler,
+//   zorunluluk ve kurallar
+// Kullanım bilgisi (nasıl yapılır, iş kuralları, alan etiketleri) burada değil,
+// Application Knowledge katmanındadır (Knowledge/*.md, search_app_knowledge).
 
 public class AppManifest
 {
@@ -51,17 +54,17 @@ public class FormSubmit
     public string Url { get; set; } = string.Empty;
 }
 
+// Sözleşme alanı (Swagger). Etiket yoktur: kullanıcının gördüğü etiket ekran özetinden,
+// kullanım dili rehberlerden gelir.
 public class FieldDefinition
 {
     public string Name { get; set; } = string.Empty;
-    public string Label { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
 
     // Ekranda alan bu adla bulunur: data-ai-field → name → id
     public string ElementId { get; set; } = string.Empty;
     public bool Required { get; set; }
     public List<FieldRule>? Rules { get; set; }
-    public string? Hint { get; set; }
 }
 
 public class FieldRule
@@ -72,5 +75,8 @@ public class FieldRule
     public string? Pattern { get; set; }
 }
 
-/// <summary>Ekrandaki bir elemanın manifest'teki karşılığı (sayfa elemanı veya form alanı).</summary>
-public record ManifestElement(string Id, string Label, string Kind, string PageId);
+/// <summary>
+/// Ekrandaki bir elemanın manifest'teki karşılığı. Katalog elemanlarının etiketi vardır;
+/// form alanlarının (Swagger) etiketi yoktur (null).
+/// </summary>
+public record ManifestElement(string Id, string? Label, string Kind, string PageId);

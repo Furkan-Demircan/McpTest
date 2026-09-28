@@ -9,6 +9,8 @@ namespace API.Forms;
 /// Bir endpoint'in request body şemasını uygulamanın kendi Swagger dokümanından okur ve
 /// asistanın anlayacağı alan listesine çevirir. Backend'de ek işaretleme gerekmez:
 /// Swashbuckle DataAnnotations'ı zaten şemaya yazar (required, maxLength, pattern, format).
+/// Swagger yalnızca sözleşme kaynağıdır: alan adı, tip, zorunluluk ve kurallar okunur.
+/// Etiket, ipucu veya kullanım bilgisi buradan alınmaz; o Application Knowledge katmanındadır.
 /// Doküman JSON'a serileştirilip okunur; Microsoft.OpenApi nesne modelinin sürüm
 /// farklarından etkilenmemek için.
 /// </summary>
@@ -74,8 +76,6 @@ public sealed class SwaggerFormSchemaProvider(ISwaggerProvider swaggerProvider)
         return new FieldDefinition
         {
             Name = name,
-            // title DisplaySchemaFilter'dan gelir; [Display] yoksa alan adı
-            Label = GetString(schema, "title") ?? name,
             Type = format switch
             {
                 "email" => "email",
@@ -84,8 +84,7 @@ public sealed class SwaggerFormSchemaProvider(ISwaggerProvider swaggerProvider)
             },
             ElementId = name,
             Required = required,
-            Rules = rules.Count > 0 ? rules : null,
-            Hint = GetString(schema, "description")
+            Rules = rules.Count > 0 ? rules : null
         };
     }
 

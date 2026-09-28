@@ -13,6 +13,14 @@ Frontend normal bir React uygulaması olarak kalır. Asistan için UI yeniden ya
 | İş nasıl yapılır | Süreç rehberleri (`Knowledge/*.md`) | İsteğe bağlı, önerilir |
 | Ekranda işlem (doldurma, işaretleme, gezinme) | DOM aksiyonları | Hiçbir şey |
 
+### Kaynakların rolleri birbirine karışmaz
+
+- **Swagger yalnızca sözleşme kaynağıdır:** bir form neyi gönderir (alan adı, tip, zorunluluk, `maxLength` / `pattern` gibi kurallar). Etiket, ipucu, kullanım talimatı veya iş kuralı Swagger'a yazılmaz ve oradan okunmaz.
+- **Kullanım bilgisi Application Knowledge katmanındadır:** süreç rehberleri (`Knowledge/*.md`, `search_app_knowledge`) ve sayfa kataloğu. "Nasıl yapılır", "neden", iş kuralları ("aynı TC ile ikinci kayıt açılamaz"), bilinen kısıtlar ("branş kaydedilmez") ve kullanıcıya dönük adlandırmalar burada yaşar.
+- **Ekran özeti çalışma anının kaynağıdır:** kullanıcının şu an gördüğü etiketler ve değerler.
+
+Örnek: "TC için kural var mı?" sorusunda 11 haneli rakam kuralı sözleşmeden, "aynı TC ile ikinci kayıt açılamaz; hata sayfanın üstünde görünür" bilgisi rehberden gelir. Asistan, şemaya bakarak kullanım rehberi uydurmaz.
+
 Asistan alanlara **DOM üzerinden** yazar: değeri atar ve `input` / `change` event'lerini tetikler. Böylece sayfanın kendi `onChange`'i, sanitizasyonu (TC'de sadece rakam gibi) ve validasyonu aynen çalışır. Form `useState`, react-hook-form ya da başka bir kütüphaneyle yazılmış olabilir; asistan bunu bilmek zorunda değildir.
 
 ---
@@ -80,7 +88,7 @@ npm run pages:check   # CI'da da çalıştırılabilir
 
 ## 3. Backend'de ek iş yok
 
-Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger dokümanından okur ([SwaggerFormSchemaProvider.cs](server/src/API/Forms/SwaggerFormSchemaProvider.cs)). Swashbuckle DataAnnotations'ı zaten şemaya yazar:
+Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger dokümanından **sadece sözleşme olarak** okur ([SwaggerFormSchemaProvider.cs](server/src/API/Forms/SwaggerFormSchemaProvider.cs)). Swashbuckle DataAnnotations'ı zaten şemaya yazar:
 
 | DTO'da | Asistanın gördüğü |
 |---|---|
@@ -90,7 +98,6 @@ Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger doküma
 | `[EmailAddress]` | e-posta formatı |
 | `DateOnly` / `DateTime` | tarih |
 | Kalıtım (`record CreateTeacherDto : CreateUserDto`) | Temel sınıfın alanları dahil |
-| `[Display(Name, Description)]` (isteğe bağlı) | Etiket ve ipucu ([DisplaySchemaFilter.cs](server/src/API/Forms/DisplaySchemaFilter.cs)). Yoksa etiket alan adı olur. Kullanıcı o sayfadayken etiketler zaten ekrandan gelir. |
 
 Swagger'da olmayan ya da JSON body'si olmayan bir endpoint açılışta API loguna `Manifest doğrulaması` hatası olarak düşer.
 
@@ -107,15 +114,15 @@ keywords: ders, kurs, ekle, ekleme, ders kodu, nasıl
 ---
 ## Adımlar
 1. Ana sayfada [@homeCourseLink] butonuna tıklayın.
-2. Formu doldurun. İlk alan [@courseName].
+2. Formu doldurun. İlk alan "Ders Adı" [@courseName].
 3. [@courseSubmit] butonuna basın.
 
 ## Bilinmesi gerekenler
 - Aynı ders kodu ile ikinci bir ders açılamaz.
 ```
 
-- **Sadece süreç bilgisi yaz:** adım sırası, iş kuralları, bilinen kısıtlar. Alan listesi ve kurallar yazılmaz; asistan onları Swagger'dan alır.
-- **`[@...]` ile referans ver:** katalogdaki eleman kimliklerine veya Swagger alan adlarına. Alan adları farklı formlarda tekrar edebildiği için (`firstName`) referans, rehberin `pages:` listesindeki sayfalarda aranır.
+- **Kullanım bilgisi yaz:** adım sırası, iş kuralları, bilinen kısıtlar ve kullanıcıya dönük adlandırmalar. Alanların tip ve kuralları (sözleşme) yazılmaz; asistan onları Swagger'dan alır.
+- **`[@...]` ile referans ver:** katalogdaki eleman kimliklerine veya Swagger alan adlarına. Katalog elemanları etiketiyle genişletilir (`"Dersi Kaydet" butonu [id: courseSubmit]`). Form alanlarının etiketini ise metin kendisi yazar (`İlk alan "Ders Adı" [@courseName].` → `[alan: courseName]`), çünkü Swagger kullanım dili taşımaz. Alan adları farklı formlarda tekrar edebildiği için (`firstName`) referans, rehberin `pages:` listesindeki sayfalarda aranır.
 - **Uygulamada olmayan bir şeyi açıkça yaz** ("detay ekranı yoktur"). Rehber sessiz kalırsa model boşluğu doldurabilir.
 - **Doğrulama açılışta yapılır.** Geçersiz referanslar API loguna `Bilgi tabanı doğrulaması` hatası olarak düşer.
 
@@ -137,7 +144,6 @@ keywords: ders, kurs, ekle, ekleme, ders kodu, nasıl
 | Asistan alanı "ekranda yok" diyor | Input'ta `name`/`id` yok ya da DTO adıyla eşleşmiyor | `name`'i DTO alanıyla aynı yap veya `data-ai-field` ekle |
 | Asistan yazdı ama değer kaydedilmedi | Özel bileşen (tarih seçici, custom select, maskeli input) native input kullanmıyor | [writeValue.ts](client/src/assistant/dom/writeValue.ts)'teki `registerFieldWriter` ile o bileşene özel yazıcı ekle |
 | Başka sayfanın alanları boş geliyor | Katalogda `endpoint` yok ya da Swagger path'i farklı | Logdaki `Manifest doğrulaması` hatasına bak; endpoint'i Swagger'daki path ile yaz |
-| Etiketler alan adı olarak görünüyor (başka sayfa için) | DTO'da `[Display]` yok | İsteğe bağlı olarak `[Display(Name = ...)]` ekle; kullanıcı o sayfadayken etiket zaten ekrandan gelir |
 | `pages:check` "App.tsx route'larında yok" diyor | Katalog path'i ile route farklı | İkisini eşitle |
 | Asistan yeni sayfayı bilmiyor | JSON güncellenmedi veya API yeniden başlatılmadı | `npm run pages`, API'yi yeniden başlat |
 | Asistan rehberi bulamıyor | Soru kelimeleri `keywords` ile eşleşmiyor | Kullanıcıların kullandığı kelimeleri ekle |
