@@ -1,17 +1,15 @@
 import type { AiAction } from '../../services/assistantApi'
 import type { AiActionHandler } from './types'
+import { waitForElement } from './waitForElement'
 
 const HIGHLIGHT_CLASS = 'assistant-highlight'
 const HINT_CLASS = 'assistant-highlight-hint'
-const WAIT_FOR_ELEMENT_MS = 3000
 const HIGHLIGHT_DURATION_MS = 8000
 
 let clearActiveHighlight: (() => void) | null = null
 
 /**
- * Ekrandaki bir elemanı kullanıcıya işaretler.
- * Aynı cevapta önce navigation gelmiş olabilir; yeni sayfa render olana
- * kadar eleman DOM'da yoktur, bu yüzden kısa bir süre beklenir.
+ * Ekrandaki bir elemanı kullanıcıya işaretler (navigasyon sonrası elemanı bekler).
  */
 export function createHighlightHandler(): AiActionHandler {
   return (action: AiAction) => {
@@ -33,26 +31,6 @@ export function createHighlightHandler(): AiActionHandler {
       showHighlight(element, message)
     })
   }
-}
-
-function waitForElement(elementId: string): Promise<HTMLElement | null> {
-  return new Promise((resolve) => {
-    const startedAt = performance.now()
-
-    const check = () => {
-      const element = document.getElementById(elementId)
-
-      if (element) {
-        resolve(element)
-      } else if (performance.now() - startedAt > WAIT_FOR_ELEMENT_MS) {
-        resolve(null)
-      } else {
-        requestAnimationFrame(check)
-      }
-    }
-
-    check()
-  })
 }
 
 function showHighlight(element: HTMLElement, message?: string) {
