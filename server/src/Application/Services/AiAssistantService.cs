@@ -10,7 +10,7 @@ namespace Application.AI;
 public class AiAssistantService : IAiAssistantService
 {
     // Tek bir kullanıcı mesajı için izin verilen en fazla LLM ↔ tool turu.
-    private const int MaxIterations = 5;
+    private const int MaxIterations = 8;
 
     private readonly IAiProvider _aiProvider;
     private readonly IMcpClientService _mcpClientService;

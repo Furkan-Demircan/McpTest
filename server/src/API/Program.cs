@@ -6,6 +6,7 @@ using Application.MCP.Tools;
 using Infrastructure;
 using Infrastructure.MCP;
 using Infrastructure.Persistence;
+using MCP.Server.Knowledge;
 using MCP.Server.Manifest;
 using ModelContextProtocol.Client;
 
@@ -18,6 +19,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 // MCP sunucusunu API ile aynı işlemde yayınla.
 builder.Services.AddAppManifest();
+builder.Services.AddAppKnowledge();
 builder.Services
     .AddMcpServer()
     .WithHttpTransport()

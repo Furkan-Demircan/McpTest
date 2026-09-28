@@ -156,6 +156,7 @@ export const AssistantWidget: React.FC = () => {
   ])
 
   const quickQuestions = [
+    'Sistemde yeniyim, öğrenci eklemem lazım ama nasıl yapılır bilmiyorum',
     'Öğrenci nasıl eklenir?',
     'Öğretmen nasıl eklenir?',
     'Hangi bilgiler gerekli?',

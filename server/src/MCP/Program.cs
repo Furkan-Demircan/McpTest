@@ -1,3 +1,4 @@
+using MCP.Server.Knowledge;
 using MCP.Server.Manifest;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,7 @@ public static class McpServerHost
         });
 
         builder.Services.AddAppManifest();
+        builder.Services.AddAppKnowledge();
 
         builder.Services
             .AddMcpServer()
