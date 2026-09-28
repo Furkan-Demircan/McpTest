@@ -186,6 +186,7 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
 | `fill_form` | `values`, `target?` | Patches any registered form. Target and field names are validated against the app manifest; defaults to the form on the user's current page. | `type: "form_patch"` |
 | `navigate_to_page` | `page` (page id, path or alias) | Redirects the user to a manifest page; always emits the canonical path. | `type: "navigation"` |
 | `highlight_element` | `elementId`, `message?` | Scrolls to and highlights an on-screen element with a short hint. Rejected by the server if the element will not be visible to the user. | `type: "highlight"` |
+| `set_input_value` | `elementId`, `value` | Types into a non-form input on screen (search box, filter) via the page's own change handler. Rejected for form fields (use `fill_form`) and off-screen elements. | `type: "input_value"` |
 | `search_app_knowledge` | `query` | Searches the process guides in `server/src/MCP/Knowledge/*.md`. | Guides |
 | `get_page_schema` | `page` | Returns a page's elements and, if it has a form, its fields, rules and messages (from the manifest). | Schema object |
 | `list_app_pages` | None | Lists all pages in the manifest. | Page list |

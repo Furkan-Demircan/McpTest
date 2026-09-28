@@ -15,6 +15,7 @@ import {
 } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 import { createHighlightHandler } from '../assistant/actions/highlightHandler'
+import { createInputValueHandler } from '../assistant/actions/inputValueHandler'
 import { createGlobalFormHandler } from '../assistant/actions/forms/globalFormHandler'
 import { AssistantTrace } from './AssistantTrace'
 import { captureScreenSnapshot } from '../assistant/screenSnapshot'
@@ -138,12 +139,14 @@ export const AssistantWidget: React.FC = () => {
 
   const navigationHandler = createNavigationHandler(navigate)
   const highlightHandler = createHighlightHandler()
+  const inputValueHandler = createInputValueHandler()
 
   const actionHandlerRegistry =
     createActionHandlerRegistry({
       formPatchHandler,
       navigationHandler,
       highlightHandler,
+      inputValueHandler,
     })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)

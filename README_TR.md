@@ -182,6 +182,7 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
 | `fill_form` | `values`, `target?` | Kayıtlı herhangi bir formu doldurur. Hedef form ve alan adları manifest'e karşı doğrulanır; hedef verilmezse kullanıcının bulunduğu sayfanın formu kullanılır. | `type: "form_patch"` |
 | `navigate_to_page` | `page` (sayfa kimliği, path veya alias) | Kullanıcıyı manifest'teki bir sayfaya yönlendirir; istemciye her zaman kanonik path gider. | `type: "navigation"` |
 | `highlight_element` | `elementId`, `message?` | Ekrandaki bir elemana kaydırıp vurgular, yanında kısa not gösterir. Eleman kullanıcının göreceği ekranda değilse sunucu reddeder. | `type: "highlight"` |
+| `set_input_value` | `elementId`, `value` | Ekrandaki form dışı bir girişe (arama kutusu, filtre) sayfanın kendi değişiklik handler'ı üzerinden yazar. Form alanları (`fill_form` kullanılır) ve ekranda olmayan elemanlar için reddedilir. | `type: "input_value"` |
 | `search_app_knowledge` | `query` | `server/src/MCP/Knowledge/*.md` süreç rehberlerinde arar. | Rehberler |
 | `get_page_schema` | `page` | Sayfanın elemanlarını, form varsa alanlarını, kurallarını ve mesajlarını (manifest'ten) döner. | Şema nesnesi |
 | `list_app_pages` | Yok | Manifest'teki tüm sayfaları listeler. | Sayfa listesi |

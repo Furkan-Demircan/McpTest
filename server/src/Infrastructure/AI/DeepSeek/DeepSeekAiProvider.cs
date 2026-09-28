@@ -135,10 +135,15 @@ public class DeepSeekAiProvider : IAiProvider
                   forma aitse (örn. ana sayfadayken öğretmen bilgisi verildi) önce o sayfaya
                   `navigate_to_page` ile git ve 'target' olarak o sayfanın formId'sini ver.
                 - Formsuz bir sayfadaysan ve hangi forma ait olduğu belli değilse kullanıcıya sor.
+                - Form DIŞI giriş alanları (arama kutusu, filtre) için `fill_form` değil
+                  `set_input_value` kullan; kimliği ekran özetinden al.
                 - Mevcut formda zaten bulunan değişmemiş bilgileri tekrar göndermene gerek yok, yalnızca yeni ve güncellenmiş bilgileri ilet.
 
                 Tool hataları:
                 - Bir tool {"error": ...} döndürürse hatayı oku, mümkünse düzeltilmiş argümanlarla tekrar dene; değilse kullanıcıya açıkça bildir.
+                - Hata dönen bir işlemi yapmış gibi anlatma.
+                - Aksiyonların ekrandaki sonucunu (listede ne çıktığı, kaydın başarılı olup olmadığı)
+                  göremezsin. Sonucu görmüş gibi konuşma; kullanıcıdan kontrol etmesini iste.
                 """
             },
             new

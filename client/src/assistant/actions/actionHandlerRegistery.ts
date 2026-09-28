@@ -5,6 +5,7 @@ interface ActionHandlerRegistryOptions {
   formPatchHandler: AiActionHandler
   navigationHandler: AiActionHandler
   highlightHandler: AiActionHandler
+  inputValueHandler: AiActionHandler
 }
 
 export interface ActionHandleResult {
@@ -17,11 +18,13 @@ export function createActionHandlerRegistry({
   formPatchHandler,
   navigationHandler,
   highlightHandler,
+  inputValueHandler,
 }: ActionHandlerRegistryOptions) {
   const handlers: Record<string, AiActionHandler> = {
     form_patch: formPatchHandler,
     navigation: navigationHandler,
     highlight: highlightHandler,
+    input_value: inputValueHandler,
   }
 
   return {

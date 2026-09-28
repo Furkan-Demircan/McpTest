@@ -271,13 +271,19 @@ public class AiAssistantService : IAiAssistantService
             AiActionTypes.Navigation => true,
             AiActionTypes.Notification => true,
             AiActionTypes.Highlight => true,
+            AiActionTypes.InputValue => true,
             _ => false
         };
     }
 
     /// <summary>
-    /// Highlight aksiyonu, kullanıcının aksiyonlar uygulandıktan sonra göreceği
-    /// ekranda bulunmalı: navigasyon olduysa hedef sayfada, olmadıysa ekran özetinde.
+    /// İstemcide uygulanamayacağı baştan belli olan UI aksiyonlarını yakalar.
+    /// İstemci aksiyonun sonucunu modele geri bildiremediği için (tek yönlü akış)
+    /// bu kontrol olmadan model başarısız bir işlemi "yaptım" diye anlatır.
+    /// - form_patch: hedef form çözülebilmeli (formsuz sayfada target şart)
+    /// - highlight / input_value: eleman, kullanıcının aksiyonlar uygulandıktan sonra
+    ///   göreceği ekranda olmalı; navigasyon olduysa hedef sayfada, olmadıysa ekran özetinde
+    /// - input_value: form alanına değil, form dışı giriş alanına yazar
     /// Sorun varsa modele gidecek hata mesajını döner.
     /// </summary>
     private static string? ValidateUiAction(
@@ -285,13 +291,39 @@ public class AiAssistantService : IAiAssistantService
         string? navigatedPageId,
         ScreenSnapshot? screen)
     {
-        if (action.Type != AiActionTypes.Highlight)
+        if (action.Type == AiActionTypes.FormPatch)
+        {
+            return string.IsNullOrWhiteSpace(action.Target)
+                ? "Kullanıcının bulunduğu sayfada form yok ve hedef form (target) verilmedi; form doldurulmadı. " +
+                  "Form dışı bir giriş alanına (arama kutusu, filtre) yazmak için set_input_value kullan; " +
+                  "bir forma yazmak için o formun sayfasına git ve target ver."
+                : null;
+        }
+
+        if (action.Type is not (AiActionTypes.Highlight or AiActionTypes.InputValue))
         {
             return null;
         }
 
         var elementId = GetDataString(action, "elementId");
         var elementPageId = GetDataString(action, "pageId");
+
+        if (action.Type == AiActionTypes.InputValue)
+        {
+            // Manifest'te form alanı olarak tanımlıysa form durumu (FormContext) üzerinden yazılmalı
+            if (GetDataString(action, "elementKind") == "field")
+            {
+                return $"'{elementId}' bir form alanı; set_input_value yerine fill_form kullan " +
+                       "(values anahtarı alanın name değeridir, element id değil).";
+            }
+
+            var onScreen = screen?.Elements.FirstOrDefault(element => element.Id == elementId);
+            if (navigatedPageId == null && onScreen != null &&
+                onScreen.Kind is not ("input" or "textarea" or "select"))
+            {
+                return $"'{elementId}' bir giriş alanı değil ({onScreen.Kind}); değer yazılamaz.";
+            }
+        }
 
         if (navigatedPageId != null)
         {

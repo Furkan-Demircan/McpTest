@@ -42,4 +42,37 @@ public static class ScreenTools
         };
     }
 
+    [McpServerTool(UseStructuredContent = true)]
+    [Description(
+    "Ekrandaki form DIŞI bir giriş alanına (arama kutusu, filtre vb.) değer yazar; " +
+    "örn. kayıt listesinde bir kişiyi aramak için usersSearch. " +
+    "Form alanları için KULLANILMAZ, onlar için fill_form kullanılır. " +
+    "elementId ekran özetinden (veya navigasyondan sonraki sayfa için get_page_schema'dan) alınır. " +
+    "Sonucu (örn. listede ne çıktığını) göremezsin; kullanıcıya kontrol ettir.")]
+    public static InputValueResult SetInputValue(
+        AppManifestStore manifest,
+        [Description("Değer yazılacak giriş alanının kimliği, örn: 'usersSearch'.")]
+        string elementId,
+        [Description("Yazılacak değer. Boş string alanı temizler.")]
+        string value)
+    {
+        if (string.IsNullOrWhiteSpace(elementId))
+        {
+            throw new McpException("elementId boş olamaz.");
+        }
+
+        var element = manifest.FindElement(elementId);
+
+        return new InputValueResult
+        {
+            Target = elementId,
+            Data = new InputValueData
+            {
+                ElementId = elementId,
+                Value = value,
+                PageId = element?.PageId,
+                ElementKind = element?.Kind
+            }
+        };
+    }
 }
