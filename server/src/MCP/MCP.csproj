@@ -15,4 +15,9 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <!-- Uygulama manifest'i: çalışma zamanında AppContext.BaseDirectory altından okunur. -->
+  <ItemGroup>
+    <None Include="Manifest\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

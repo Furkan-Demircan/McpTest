@@ -6,6 +6,7 @@ using Application.MCP.Tools;
 using Infrastructure;
 using Infrastructure.MCP;
 using Infrastructure.Persistence;
+using MCP.Server.Manifest;
 using ModelContextProtocol.Client;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ AddDotEnvConfiguration(builder);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 // MCP sunucusunu API ile aynı işlemde yayınla.
+builder.Services.AddAppManifest();
 builder.Services
     .AddMcpServer()
     .WithHttpTransport()

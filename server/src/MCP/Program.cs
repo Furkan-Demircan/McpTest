@@ -1,3 +1,4 @@
+using MCP.Server.Manifest;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,6 +29,8 @@ public static class McpServerHost
                     .WithExposedHeaders("Mcp-Session-Id");
             });
         });
+
+        builder.Services.AddAppManifest();
 
         builder.Services
             .AddMcpServer()

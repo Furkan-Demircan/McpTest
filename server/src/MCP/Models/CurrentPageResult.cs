@@ -6,5 +6,9 @@ public class CurrentPageResult
 
     public string Page { get; set; } = string.Empty;
 
+    public string? PageId { get; set; }
+
     public string PageName { get; set; } = string.Empty;
+
+    public string? FormId { get; set; }
 }

@@ -7,9 +7,9 @@ public class ToolContextRegistry : IToolContextRegistry
     private static readonly Dictionary<string, AiToolContextType> Contexts =
         new()
         {
+            // Form verisi artık her istekte bağlam mesajıyla modele gidiyor;
+            // tool argümanlarına ayrıca enjekte etmeye gerek yok.
             ["get_current_page"] = AiToolContextType.Page,
-            ["get_form_status"] = AiToolContextType.Form,
-            ["fill_form"] = AiToolContextType.Form,
         };
 
     public AiToolContextType GetContextType(string toolName)
