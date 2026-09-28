@@ -77,7 +77,7 @@ flowchart LR
 4. **Floating AI Assistant & Voice Dictation**:
    - **Speech-to-Text (STT)** powered by the browser Web Speech API (`tr-TR`), supporting continuous hands-free voice dictation.
    - Multi-turn conversation history with DeepSeek AI.
-   - **MCP Tool-Calling Execution Loop**: As the user speaks or types (*e.g., "Set the student name to Ahmet and birth date to 2005-04-12"*), the backend invokes MCP tools and dispatches `form_patch` actions that directly populate React form inputs on the client.
+   - **MCP Tool-Calling Execution Loop**: As the user speaks or types (*e.g., "Set the student name to Ahmet and birth date to 2005-04-12"*), the backend invokes MCP tools and dispatches `fill_fields` actions; the client writes the values into the inputs on screen through the DOM, so the page's own `onChange` and validation run.
    - **Navigation Action**: The AI can programmatically redirect users (*e.g., "Take me to the teacher page"* triggers client-side navigation to `/teacher`).
 
 5. **Model Context Protocol (MCP) Server**:
@@ -91,7 +91,7 @@ flowchart LR
 ### A. Frontend
 - **Framework:** React 19, TypeScript, Vite
 - **Routing:** `react-router-dom` v7 with aliases (`/form`, `/ogrenci`, `/teacher`, `/ogretmen`, `/users`)
-- **State Management:** React Context API (`FormContext`, `FormProvider`) handling partitioned student and teacher form states
+- **State Management:** Pages keep their own local state (`useState`); the assistant never touches application state and works only through the DOM
 - **Voice Recognition:** Web Speech API (`webkitSpeechRecognition` / `SpeechRecognition`) with auto-reconnection and continuous streaming
 - **Styling:** Modern responsive CSS with custom design tokens, dark/light theme variables, glassmorphism, and responsive grid layouts
 
@@ -139,20 +139,16 @@ McpTest/
 │
 ├── client/                         # Frontend Application (React 19 + TypeScript + Vite)
 │   ├── src/
-│   │   ├── assistant/              # Client-side action handlers for AI
-│   │   │   └── actions/
-│   │   │       ├── forms/          # Form patchers (studentFormHandler, teacherFormHandler)
-│   │   │       ├── actionHandlerRegistery.ts
-│   │   │       ├── formPatchHandlerRegistry.ts
-│   │   │       └── navigationHandler.ts
+│   │   ├── app/
+│   │   │   └── aiPages.ts          # Page catalog for the assistant (pages, paths, endpoints)
+│   │   ├── assistant/              # Client-side assistant runtime (never touches app state)
+│   │   │   ├── actions/            # fill_fields, highlight, navigation handlers
+│   │   │   ├── dom/                # DOM adapter: findAiElement, writeValue
+│   │   │   └── screenSnapshot.ts   # Live screen summary sent with each request
 │   │   ├── components/
 │   │   │   ├── AssistantWidget.tsx # Floating AI chat with Voice Dictation
 │   │   │   └── AssistantWidget.css
-│   │   ├── contexts/               # Form state management (Student & Teacher)
-│   │   │   ├── FormContext.tsx
-│   │   │   ├── FormProvider.tsx
-│   │   │   └── useFormContext.tsx
-│   │   ├── pages/
+│   │   ├── pages/                  # Regular hand-written React pages (local state)
 │   │   │   ├── HomePage.tsx        # Welcome landing page
 │   │   │   ├── FormPage.tsx        # Student registration form
 │   │   │   ├── TeacherFormPage.tsx # Teacher registration form
@@ -183,16 +179,15 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
 
 | Tool Name | Parameters | Description | Output Target |
 |---|---|---|---|
-| `fill_form` | `values`, `target?` | Patches any registered form. Target and field names are validated against the app manifest; defaults to the form on the user's current page. | `type: "form_patch"` |
-| `navigate_to_page` | `page` (page id, path or alias) | Redirects the user to a manifest page; always emits the canonical path. | `type: "navigation"` |
-| `highlight_element` | `elementId`, `message?` | Scrolls to and highlights an on-screen element with a short hint. Rejected by the server if the element will not be visible to the user. | `type: "highlight"` |
-| `set_input_value` | `elementId`, `value` | Types into a non-form input on screen (search box, filter) via the page's own change handler. Rejected for form fields (use `fill_form`) and off-screen elements. | `type: "input_value"` |
+| `fill_fields` | `values` | Writes values into fields on the user's screen (form fields, search boxes, filters) through the DOM, so the page's own `onChange` runs. Keys are validated against the screen snapshot, or against the target page's Swagger fields after a navigation. | `type: "fill_fields"` |
+| `navigate_to_page` | `page` (page id, path or alias) | Redirects the user to a catalog page; always emits the canonical path. | `type: "navigation"` |
+| `highlight_element` | `elementId`, `message?` | Scrolls to and highlights an on-screen element (id, `name` or `data-ai-field`) with a short hint. Rejected if the element will not be visible to the user. | `type: "highlight"` |
 | `search_app_knowledge` | `query` | Searches the process guides in `server/src/MCP/Knowledge/*.md`. | Guides |
-| `get_page_schema` | `page` | Returns a page's elements and, if it has a form, its fields, rules and messages (from the manifest). | Schema object |
+| `get_page_schema` | `page` | Returns a page's catalog elements and, if it posts to an endpoint, the fields and rules from that endpoint's Swagger schema. | Schema object |
 | `list_app_pages` | `query?`, `module?` | Searches pages by topic or module (max 10). Without arguments returns the module list (and pages if there are few). | Page list |
 | `get_current_page` | `currentPage` (injected) | Returns the current page id, title and form. | Page object |
 
-**Forms are derived from the backend:** the server builds the app manifest at runtime from controller actions marked with `[AppForm]` (opt-in) and their `[FromBody]` DTOs' DataAnnotations (`[Display]`, `[Required]`, `[StringLength]`, `[RegularExpression]`, `[EmailAddress]`, `[Suggestions]`), and serves it at `GET /api/app-manifest`. The client builds routes, the home menu and forms (`GenericFormPage`) from it. Adding a form means adding a DTO and an `[AppForm]` action; no client code. Knowledge guide references (`[@elementId]`) are validated at startup. See [FormEkleme.md](FormEkleme.md).
+**The assistant knows the app without changing it:** the frontend stays a regular React app. The assistant reads the current screen from the DOM (live snapshot with labels and values), knows other pages from a small page catalog ([`client/src/app/aiPages.ts`](client/src/app/aiPages.ts): id, path, title, module and the endpoint the page posts to), and gets each form's fields and rules from that endpoint's **Swagger** schema (no backend annotations needed). Screen fields map to Swagger fields by `data-ai-field` → `name` → `id`. `npm run pages` exports the catalog to the server, `npm run pages:check` validates it against the routes and JSX; the server validates endpoints and knowledge references at startup. See [FormEkleme.md](FormEkleme.md).
 
 ---
 
@@ -291,7 +286,7 @@ The floating AI assistant in the lower-right corner includes a microphone button
 - **Try it:** Click the microphone icon, say:
   > *"Adımı Mehmet, soyadımı Çelik, TC numaramı 12345678901 yap ve doğum tarihimi 15 Mayıs 1990 olarak ayarla"*
   
-  The assistant interprets the sentence, invokes `fill_form`, and instantly populates the input fields on the screen!
+  The assistant interprets the sentence, invokes `fill_fields`, and instantly populates the input fields on the screen!
 
 ---
 

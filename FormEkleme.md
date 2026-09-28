@@ -1,124 +1,98 @@
-# Yeni Form Ekleme Rehberi
+# Bir Ekranı Asistana Tanıtmak
 
-Formlar **backend'den türetilir**. Yeni bir form için bir DTO ve `[AppForm]` ile işaretlenmiş bir controller action'ı yazarsın.
-İstemcide kod yazılmaz, manifest dosyası düzenlenmez, export adımı yoktur.
-Örnek olarak **Ders Ekleme** formu kullanılıyor.
+Bu rehber, uygulamadaki **mevcut ya da yeni** bir ekranın (örneğin "Ders Ekleme") asistan tarafından tanınmasını anlatır.
+Frontend normal bir React uygulaması olarak kalır. Asistan için UI yeniden yazılmaz, formlar genel bir bileşenle çizilmez, uygulamanın state'ine dokunulmaz.
 
-## Nasıl çalışır?
+## Asistan uygulamayı nereden bilir?
 
-1. Sunucu açılışta `[AppForm]` işaretli action'ları bulur (ApiExplorer) ve manifest'i üretir ([AppManifestBuilder.cs](server/src/API/Forms/AppManifestBuilder.cs)):
-   - Alanlar action'ın `[FromBody]` DTO'sundan gelir.
-   - Submit adresi action'ın route'undan gelir.
-2. Manifest `GET /api/app-manifest` ile sunulur. MCP tool'ları da aynı manifest'i kullanır.
-3. İstemci manifest'i açılışta çeker ([ManifestProvider.tsx](client/src/app/ManifestProvider.tsx)). Route'ları, ana sayfa menüsünü, kayıt listesindeki "ekle" linklerini ve formları ([GenericFormPage.tsx](client/src/pages/GenericFormPage.tsx)) buradan kurar.
+| İhtiyaç | Kaynak | Senin yapman gereken |
+|---|---|---|
+| Şu an ekranda ne var (etiketler, değerler, zorunluluklar) | Canlı ekran özeti (DOM'dan, her istekte) | Normal HTML: input'larda `name`/`id`, `<label for>` |
+| Hangi sayfalar var, nereye gidilir | Sayfa kataloğu ([aiPages.ts](client/src/app/aiPages.ts)) | Sayfa başına tek kayıt |
+| Başka bir sayfanın alanları ve kuralları | O sayfanın gönderdiği endpoint'in **Swagger** şeması | Hiçbir şey (Swagger zaten üretiliyor) |
+| İş nasıl yapılır | Süreç rehberleri (`Knowledge/*.md`) | İsteğe bağlı, önerilir |
+| Ekranda işlem (doldurma, işaretleme, gezinme) | DOM aksiyonları | Hiçbir şey |
 
-**Opt-in:** Sadece `[AppForm]` taşıyan action'lar forma dönüşür. İşaretlenmemiş endpoint'ler (listeleme, detay, rapor, dahili servisler) manifest'e, istemciye veya modele hiç gitmez. Form ile endpoint arasındaki bağı attribute'un yazıldığı action belirler; tahmin yapılmaz.
-
-| | Nasıl gelir |
-|---|---|
-| Route, alias yönlendirmeleri, ana sayfa menüsü | Otomatik |
-| Form ekranı, etiketler, zorunluluk, validasyon, hata mesajları | Otomatik (DTO'dan) |
-| Submit endpoint'i ve sunucu hatalarının gösterimi | Otomatik (action'dan) |
-| Asistan: `navigate_to_page`, `list_app_pages`, `get_page_schema`, `fill_form`, `highlight_element`, ekran özeti | Otomatik |
-| DTO + action | **Senin yazdığın** |
-| Varlığın geri kalan backend'i (entity, servis, repository, tablo) | **Senin yazdığın** |
-| Süreç rehberi (Knowledge) | İsteğe bağlı, önerilir |
+Asistan alanlara **DOM üzerinden** yazar: değeri atar ve `input` / `change` event'lerini tetikler. Böylece sayfanın kendi `onChange`'i, sanitizasyonu (TC'de sadece rakam gibi) ve validasyonu aynen çalışır. Form `useState`, react-hook-form ya da başka bir kütüphaneyle yazılmış olabilir; asistan bunu bilmek zorunda değildir.
 
 ---
 
-## 1. DTO: alanlar ve validasyon
+## 1. Sayfayı normal şekilde yaz
 
-```csharp
-using System.ComponentModel.DataAnnotations;
-using Application.Forms;
+Sayfa, route ve backend endpoint'i her zamanki gibi yazılır. Asistan açısından tek bir konvansiyon var:
 
-public record CreateCourseDto
-{
-    [Display(Name = "Ders Adı", Order = 10)]
-    [Required(ErrorMessage = "Ders adı zorunludur.")]
-    [StringLength(100, ErrorMessage = "Ders adı en fazla 100 karakter olabilir.")]
-    public string CourseName { get; init; } = default!;
+**Input'un `name`'i, endpoint'in DTO alan adıyla (Swagger'daki camelCase adla) aynı olsun.**
 
-    [Display(Name = "Ders Kodu", Order = 20, Description = "Örn: MAT101")]
-    [Required(ErrorMessage = "Ders kodu zorunludur.")]
-    [RegularExpression(@"^[A-Z]{3}\d{3}$", ErrorMessage = "Ders kodu 3 harf + 3 rakam olmalıdır.")]
-    public string CourseCode { get; init; } = default!;
-
-    [Display(Name = "Seviye", Order = 30)]
-    [Suggestions("Başlangıç", "Orta", "İleri")]
-    public string? Level { get; init; }
-
-    [Display(Name = "Başlangıç Tarihi", Order = 40)]
-    [Required(ErrorMessage = "Başlangıç tarihi zorunludur.")]
-    public DateOnly StartDate { get; init; }
-}
+```tsx
+<label htmlFor="courseName">Ders Adı <span className="required-star">*</span></label>
+<input id="courseName" name="courseName" value={form.courseName} onChange={handleChange} />
 ```
 
-| Attribute | Manifest'te | UI'da |
-|---|---|---|
-| `[Display(Name)]` | `label` | Alan etiketi. Asistan da bu etiketle konuşur. |
-| `[Display(Order)]` | Alan sırası | Kalıtımda sırayı korumak için **her alana ver**. |
-| `[Display(Description)]` | `hint` | Alanın altındaki ipucu; asistana da gider. |
-| `[Required]` | `required`, `requiredMessage` | Yıldız ve "zorunlu" mesajı |
-| `[StringLength]` | `minLength` / `maxLength` kuralları | Karakter sınırı ve mesajı |
-| `[RegularExpression]` | `pattern` kuralı | Desen kontrolü (tüm değer eşlenir). `\d{N}` desenlerinde rakam dışı karakterler otomatik ayıklanır. |
-| `[EmailAddress]` | `type: email`, `email` kuralı | E-posta girişi |
-| `[Suggestions(...)]` | `options` | Öneri listesi (datalist); serbest giriş kısıtlanmaz |
-| `DateOnly` / `DateTime` | `type: date` | Tarih seçici |
+- Ekrandaki alan, Swagger alanıyla **`data-ai-field` → `name` → `id`** sırasıyla eşlenir.
+- `name` farklıysa (örneğin `name="course_title"`) sadece o input'a işaret ekle: `data-ai-field="courseName"`.
+- **`<label for>`** (ya da input'u saran `<label>`) etiketin kaynağıdır. Asistan kullanıcıyla ekrandaki etiketlerle konuşur.
+- Zorunlu alanlar için `required` attribute'u ya da etikette `required-star` sınıfı, ekran özetinde "zorunlu" olarak görünür.
+- `id`'ler farklı sayfalarda farklı olabilir (öğretmen formunda `id="teacherFirstName"`, `name="firstName"`). Eşleme `name` üzerinden yürür.
 
-- **Mesajlar tek kaynaktır.** `ErrorMessage` hem istemci validasyonunda hem sunucunun `400` cevabında aynı metinle görünür.
-- **Alan adı** (`name`) property'nin camelCase halidir (`courseCode`). Asistan `fill_form` ile bu adla yazar.
-- **Ekran kimliği** `{formId}-{name}` olarak üretilir (`courseForm-courseCode`). Submit ve reset butonları `{formId}-submit` / `{formId}-reset` olur.
-- Bir alanı formdan gizlemek için `[JsonIgnore]` kullan.
+## 2. Katalog kaydı ekle
 
-## 2. Action: formu işaretle
+[client/src/app/aiPages.ts](client/src/app/aiPages.ts):
 
-```csharp
-using API.Forms;
-
-[HttpPost]
-[AppForm("courseForm",
-    PageId = "course-create",
-    Path = "/course",
-    Aliases = ["/ders-ekle"],
-    Title = "Ders Ekleme Formu",
-    Description = "Yeni ders kaydı oluşturulur.",
-    Module = "Akademik",
-    NavLabel = "Ders Ekle",
-    SubmitLabel = "Dersi Kaydet")]
-public async Task<IActionResult> Create([FromBody] CreateCourseDto dto, CancellationToken cancellationToken)
+```ts
 {
-    var created = await _courseService.CreateAsync(dto, cancellationToken);
-    return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-}
+  id: 'course-create',
+  path: '/course',
+  aliases: ['/ders-ekle'],
+  title: 'Ders Ekleme Formu',
+  description: 'Yeni ders kaydı oluşturulur.',
+  module: 'Akademik',
+  endpoint: 'POST /api/courses',
+  elements: [
+    { id: 'courseSubmit', label: 'Dersi Kaydet', kind: 'button' },
+    { id: 'homeCourseLink', label: 'Ders Ekle', kind: 'link' }, // menü linki ana sayfadaysa 'home' kaydına eklenir
+  ],
+},
 ```
 
-| Özellik | Anlamı |
+| Alan | Anlamı |
 |---|---|
-| `Id` (zorunlu) | Form kimliği. Asistan `fill_form(target)` ile kullanır. |
-| `PageId` | Sayfa kimliği; boşsa form kimliği kullanılır. Rehberler bu kimlikle referans verir. |
-| `Path` (zorunlu), `Aliases` | Kanonik adres ve oraya yönlenen ek adresler |
-| `Title` (zorunlu), `Description` | Sayfa başlığı ve açıklaması |
-| `Module` | Büyük uygulamada sayfaları gruplar. Asistan önce modülü, sonra sayfayı bulur (`list_app_pages`). |
-| `NavLabel` | Doluysa ana sayfa menüsünde ve kayıt listesindeki "ekle" linklerinde görünür. |
-| `SubmitLabel` | Kaydet butonunun etiketi (varsayılan "Kaydet") |
+| `id` | Sayfa kimliği. Asistan `navigate_to_page` ve `get_page_schema`'da, rehberler `pages:`'da kullanır. |
+| `path`, `aliases` | `App.tsx`'teki route'larla aynı olmalı (kontrol edilir). |
+| `title`, `description` | Asistanın sayfayı tanıması ve araması için |
+| `module` | Büyük uygulamada sayfaları gruplar (`list_app_pages`) |
+| `endpoint` | Sayfanın gönderdiği istek, Swagger'daki path ile (`POST /api/courses`). Formun alanları ve kuralları buradan çözülür. Formsuz sayfada boş bırakılır. |
+| `elements` | Alan olmayan ama asistanın işaret edebilmesi istenen elemanlar (butonlar, linkler, arama kutusu). JSX'te aynı `id` ile bulunmalı. **Form alanları yazılmaz**, onlar Swagger'dan gelir. |
 
-- Action'ın bir `[FromBody]` DTO parametresi olmalı. Yoksa form üretilmez ve açılışta hata loglanır.
-- Cevap gövdesi başarı kartında gösterilir. Alan adları DTO etiketleriyle, `id` ve `createdAt` sabit etiketlerle yazılır.
-- İş kuralı ihlali (örneğin "bu ders kodu zaten mevcut") için `DomainException` fırlat. `GlobalExceptionMiddleware` bunu `400 { message }` olarak döner, formun üstündeki kırmızı bantta görünür.
+Sonra:
 
-## 3. Varlığın geri kalanı
+```bash
+cd client
+npm run pages         # server/src/MCP/Manifest/app-pages.json'u günceller (commit'le)
+npm run pages:check   # CI'da da çalıştırılabilir
+```
 
-Bunlar formdan bağımsız, normal backend işidir; mevcut `User` örneğini izle:
+`pages:check` şunları yakalar:
+- Katalogdaki path'in `App.tsx`'te olmaması
+- Eleman kimliğinin JSX'te olmaması
+- Tekrarlanan kimlik veya path
+- Rehberde bilinmeyen sayfa
+- Bayat JSON
 
-| Katman | Referans |
+## 3. Backend'de ek iş yok
+
+Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger dokümanından okur ([SwaggerFormSchemaProvider.cs](server/src/API/Forms/SwaggerFormSchemaProvider.cs)). Swashbuckle DataAnnotations'ı zaten şemaya yazar:
+
+| DTO'da | Asistanın gördüğü |
 |---|---|
-| Domain entity ve repository arayüzü | [User.cs](server/src/Domain/Entities/User.cs) |
-| Servis | [UserService.cs](server/src/Application/Services/UserService.cs) |
-| Repository, EF konfigürasyonu, `DbSet` | [ApplicationDbContext.cs](server/src/Infrastructure/Persistence/ApplicationDbContext.cs) |
-| DI kayıtları | [Application](server/src/Application/DependencyInjection.cs), [Infrastructure](server/src/Infrastructure/DependencyInjection.cs) |
+| `[Required]` | zorunlu |
+| `[StringLength]` / `[MaxLength]` / `[MinLength]` | `maxLength` / `minLength` kuralı |
+| `[RegularExpression]` | `pattern` kuralı |
+| `[EmailAddress]` | e-posta formatı |
+| `DateOnly` / `DateTime` | tarih |
+| Kalıtım (`record CreateTeacherDto : CreateUserDto`) | Temel sınıfın alanları dahil |
+| `[Display(Name, Description)]` (isteğe bağlı) | Etiket ve ipucu ([DisplaySchemaFilter.cs](server/src/API/Forms/DisplaySchemaFilter.cs)). Yoksa etiket alan adı olur. Kullanıcı o sayfadayken etiketler zaten ekrandan gelir. |
 
-> **Tablo otomatik oluşmaz.** Uygulama `EnsureCreated()` kullanıyor; bu sadece veritabanı hiç yoksa çalışır, var olan veritabanına yeni tablo **eklemez**. Demo için Postgres volume'ünü sıfırla (`docker compose down -v`) ya da EF migration'a geç.
+Swagger'da olmayan ya da JSON body'si olmayan bir endpoint açılışta API loguna `Manifest doğrulaması` hatası olarak düşer.
 
 ## 4. Süreç rehberi (önerilir)
 
@@ -131,45 +105,39 @@ title: Yeni ders nasıl eklenir?
 pages: home, course-create
 keywords: ders, kurs, ekle, ekleme, ders kodu, nasıl
 ---
-Yeni ders, Ders Ekleme Formu üzerinden kaydedilir.
-
 ## Adımlar
-1. Ana sayfada [@nav-course-create] butonuna tıklayın.
-2. Formdaki alanları doldurun. İlk alan [@courseForm-courseName].
-3. [@courseForm-submit] butonuna basın.
+1. Ana sayfada [@homeCourseLink] butonuna tıklayın.
+2. Formu doldurun. İlk alan [@courseName].
+3. [@courseSubmit] butonuna basın.
 
 ## Bilinmesi gerekenler
 - Aynı ders kodu ile ikinci bir ders açılamaz.
 ```
 
-- **Sadece süreç bilgisi yaz:** adım sırası, iş kuralları, bilinen kısıtlar. Alan listesi ve validasyon kuralları yazılmaz; asistan onları `get_page_schema` ile DTO'dan gelen manifest'ten alır.
-- **Ekran elemanlarına `[@elemanId]` ile referans ver.** Sunucu bunları güncel etikete çevirir. Kimlikler: `nav-{pageId}`, `{formId}-{alan}`, `{formId}-submit`, `{formId}-reset`.
+- **Sadece süreç bilgisi yaz:** adım sırası, iş kuralları, bilinen kısıtlar. Alan listesi ve kurallar yazılmaz; asistan onları Swagger'dan alır.
+- **`[@...]` ile referans ver:** katalogdaki eleman kimliklerine veya Swagger alan adlarına. Alan adları farklı formlarda tekrar edebildiği için (`firstName`) referans, rehberin `pages:` listesindeki sayfalarda aranır.
 - **Uygulamada olmayan bir şeyi açıkça yaz** ("detay ekranı yoktur"). Rehber sessiz kalırsa model boşluğu doldurabilir.
-- **Doğrulama açılışta yapılır.** Bilinmeyen bir sayfa ya da eleman referansı API logunda `Bilgi tabanı doğrulaması` hatası olarak görünür.
+- **Doğrulama açılışta yapılır.** Geçersiz referanslar API loguna `Bilgi tabanı doğrulaması` hatası olarak düşer.
 
 ## 5. Dene
 
-1. API'yi yeniden başlat. Manifest ve rehberler açılışta üretilir; `dotnet watch` yeni sınıfları hot reload ile almaz.
+1. API'yi yeniden başlat (katalog, Swagger şeması ve rehberler açılışta okunur).
 2. Logda `Manifest üretildi: N sayfa, M form` satırını ve doğrulama hatası olmadığını kontrol et.
-3. `GET /api/app-manifest/forms/courseForm` ile formun alanlarına bak.
-4. Uygulamada: ana sayfada "Ders Ekle" linki çıkmalı, `/course` formu açmalı.
-5. Asistana sor ve cevapların altındaki 🔍 trace panelinden çağrılan tool'lara bak:
+3. `GET /api/app-manifest` çıktısında sayfanın alanlarının geldiğini gör.
+4. Asistana sor, cevapların altındaki 🔍 trace panelinden tool'lara bak:
    - "Ders eklemem lazım, nasıl yapılır?" → `search_app_knowledge` → `navigate_to_page` → `highlight_element`
-   - (Ana sayfadayken) "Matematik dersi, kodu MAT101, formu doldur" → `navigate_to_page` + `fill_form` (target: `courseForm`)
+   - (Ana sayfadayken) "Matematik dersi, kodu MAT101, forma yaz" → `navigate_to_page` + `fill_fields`
    - "Ders kodunun bir kuralı var mı?" → `get_page_schema`
+5. Asistanın doldurduğu değerlerin gerçekten form state'ine geçtiğini **kaydet'e basarak** doğrula.
 
-## Özel ekran gereken formlar
-
-Genel renderer yetmiyorsa (çok adımlı akış, özel bileşen) kendi sayfanı yazıp [App.tsx](client/src/App.tsx) içindeki `PAGE_COMPONENTS`'e `pageId` ile ekleyebilirsin; o sayfa için genel renderer yerine senin bileşenin kullanılır. Manifest, menü ve asistan tarafı aynen çalışır. Bileşende `id` ve `name` değerlerini manifest'teki `elementId` / `name` ile aynı ver, etiketleri ve validasyonu `useManifest()` + `validateFormData` ile manifest'ten oku.
-
-## Bilinen tuzaklar
+## Bilinen sınırlar ve tuzaklar
 
 | Belirti | Neden | Çözüm |
 |---|---|---|
-| Form menüde/manifest'te yok | Action'da `[AppForm]` yok ya da `[FromBody]` DTO'su yok | Attribute'u ekle; açılış logundaki hataya bak |
-| Alan sırası karışık | Kalıtımda türetilmiş sınıfın alanları önce gelir | Her alana `Display(Order)` ver |
-| Asistan yeni formu bilmiyor | Sunucu yeniden başlatılmadı | API'yi yeniden başlat |
-| Logda "Tekrarlanan path/alias" | İki form aynı `Path` / `Aliases` değerini kullanıyor | Birini değiştir |
-| Logda "Bilgi tabanı doğrulaması: bilinmeyen eleman" | Rehberdeki `[@id]` bir alanın eski adını gösteriyor | Referansı üretilen kimliğe güncelle |
-| Kayıt sırasında "relation does not exist" | `EnsureCreated` var olan veritabanına tablo eklemiyor | Volume'ü sıfırla veya migration kullan |
+| Asistan alanı "ekranda yok" diyor | Input'ta `name`/`id` yok ya da DTO adıyla eşleşmiyor | `name`'i DTO alanıyla aynı yap veya `data-ai-field` ekle |
+| Asistan yazdı ama değer kaydedilmedi | Özel bileşen (tarih seçici, custom select, maskeli input) native input kullanmıyor | [writeValue.ts](client/src/assistant/dom/writeValue.ts)'teki `registerFieldWriter` ile o bileşene özel yazıcı ekle |
+| Başka sayfanın alanları boş geliyor | Katalogda `endpoint` yok ya da Swagger path'i farklı | Logdaki `Manifest doğrulaması` hatasına bak; endpoint'i Swagger'daki path ile yaz |
+| Etiketler alan adı olarak görünüyor (başka sayfa için) | DTO'da `[Display]` yok | İsteğe bağlı olarak `[Display(Name = ...)]` ekle; kullanıcı o sayfadayken etiket zaten ekrandan gelir |
+| `pages:check` "App.tsx route'larında yok" diyor | Katalog path'i ile route farklı | İkisini eşitle |
+| Asistan yeni sayfayı bilmiyor | JSON güncellenmedi veya API yeniden başlatılmadı | `npm run pages`, API'yi yeniden başlat |
 | Asistan rehberi bulamıyor | Soru kelimeleri `keywords` ile eşleşmiyor | Kullanıcıların kullandığı kelimeleri ekle |

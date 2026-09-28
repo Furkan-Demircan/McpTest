@@ -76,7 +76,7 @@ flowchart LR
 
 4. **Sağ Altta Sabit Akıllı Asistan & Sesli Dikte**:
    - **Sesle Yazma (Speech-to-Text):** Tarayıcının Web Speech API altyapısını kullanarak Türkçe (`tr-TR`) sesli dikte desteği. Duraksamalarda dinlemeyi sürdürür ve konuşmayı metne çevirir.
-   - **MCP Araç Çağırma (Tool Calling) Döngüsü:** Kullanıcı *"Öğrencinin adını Ahmet, soyadını Kaya, doğum tarihini 2004-06-18 yap"* dediğinde, DeepSeek AI backend üzerinden MCP sunucusundaki `fill_form` aracını çağırır. Dönen `form_patch` aksiyonu istemcide form input'larını otomatik doldurur.
+   - **MCP Araç Çağırma (Tool Calling) Döngüsü:** Kullanıcı *"Öğrencinin adını Ahmet, soyadını Kaya, doğum tarihini 2004-06-18 yap"* dediğinde, DeepSeek AI backend üzerinden MCP sunucusundaki `fill_fields` aracını çağırır. Dönen `fill_fields` aksiyonu değerleri istemcide DOM üzerinden ekrandaki input'lara yazar; sayfanın kendi `onChange`'i ve validasyonu çalışır.
    - **Sayfa Yönlendirme (Navigation Action):** Kullanıcı *"Beni öğretmen ekleme sayfasına götür"* dediğinde, asistan `navigate_to_page` aracı ile kullanıcıyı istemci tarafında `/teacher` sayfasına yönlendirir.
 
 5. **Model Context Protocol (MCP) Sunucusu**:
@@ -90,7 +90,7 @@ flowchart LR
 ### A. Frontend (İstemci Katmanı)
 * **Framework:** React 19, TypeScript, Vite
 * **Yönlendirme:** `react-router-dom` v7 (`/form`, `/ogrenci`, `/teacher`, `/ogretmen`, `/users` vb.)
-* **Durum Yönetimi:** React Context API (`FormContext`, `FormProvider`) ile ayrıştırılmış öğrenci ve öğretmen state'leri
+* **Durum Yönetimi:** Sayfalar kendi yerel state'lerini (`useState`) tutar; asistan uygulama state'ine hiç dokunmaz, sadece DOM üzerinden çalışır
 * **Ses Tanıma:** Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`)
 * **Tasarım:** Modern, cam efektli (glassmorphism), responsive CSS ve CSS değişkenleri
 
@@ -135,20 +135,16 @@ McpTest/
 │
 ├── client/                         # Frontend Uygulaması (React 19 + TypeScript + Vite)
 │   ├── src/
-│   │   ├── assistant/              # AI asistan istemci aksiyon işleyicileri
-│   │   │   └── actions/
-│   │   │       ├── forms/          # Form yamalayıcıları (studentFormHandler, teacherFormHandler)
-│   │   │       ├── actionHandlerRegistery.ts
-│   │   │       ├── formPatchHandlerRegistry.ts
-│   │   │       └── navigationHandler.ts
+│   │   ├── app/
+│   │   │   └── aiPages.ts          # Asistan için sayfa kataloğu (sayfalar, path'ler, endpoint'ler)
+│   │   ├── assistant/              # İstemci tarafı asistan (uygulama state'ine dokunmaz)
+│   │   │   ├── actions/            # fill_fields, highlight, navigation handlers
+│   │   │   ├── dom/                # DOM adaptörü: findAiElement, writeValue
+│   │   │   └── screenSnapshot.ts   # Her istekte gönderilen canlı ekran özeti
 │   │   ├── components/
-│   │   │   ├── AssistantWidget.tsx # Sesli Dikte destekli açılır AI Asistan
+│   │   │   ├── AssistantWidget.tsx # Sesli dikte destekli AI sohbet penceresi
 │   │   │   └── AssistantWidget.css
-│   │   ├── contexts/               # Çoklu form durum yönetimi (Öğrenci & Öğretmen)
-│   │   │   ├── FormContext.tsx
-│   │   │   ├── FormProvider.tsx
-│   │   │   └── useFormContext.tsx
-│   │   ├── pages/
+│   │   ├── pages/                  # Elle yazılmış normal React sayfaları (yerel state)
 │   │   │   ├── HomePage.tsx        # Karşılama ve hızlı yönlendirme sayfası
 │   │   │   ├── FormPage.tsx        # Öğrenci ekleme formu
 │   │   │   ├── TeacherFormPage.tsx # Öğretmen ekleme formu
@@ -179,16 +175,15 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
 
 | Araç Adı | Parametreler | Açıklama | Hedef Çıktı |
 |---|---|---|---|
-| `fill_form` | `values`, `target?` | Kayıtlı herhangi bir formu doldurur. Hedef form ve alan adları manifest'e karşı doğrulanır; hedef verilmezse kullanıcının bulunduğu sayfanın formu kullanılır. | `type: "form_patch"` |
-| `navigate_to_page` | `page` (sayfa kimliği, path veya alias) | Kullanıcıyı manifest'teki bir sayfaya yönlendirir; istemciye her zaman kanonik path gider. | `type: "navigation"` |
-| `highlight_element` | `elementId`, `message?` | Ekrandaki bir elemana kaydırıp vurgular, yanında kısa not gösterir. Eleman kullanıcının göreceği ekranda değilse sunucu reddeder. | `type: "highlight"` |
-| `set_input_value` | `elementId`, `value` | Ekrandaki form dışı bir girişe (arama kutusu, filtre) sayfanın kendi değişiklik handler'ı üzerinden yazar. Form alanları (`fill_form` kullanılır) ve ekranda olmayan elemanlar için reddedilir. | `type: "input_value"` |
+| `fill_fields` | `values` | Kullanıcının ekranındaki alanlara (form alanı, arama kutusu, filtre) DOM üzerinden yazar; sayfanın kendi `onChange`'i çalışır. Anahtarlar ekran özetine, navigasyondan sonra ise hedef sayfanın Swagger alanlarına göre doğrulanır. | `type: "fill_fields"` |
+| `navigate_to_page` | `page` (sayfa kimliği, path veya alias) | Kullanıcıyı katalogdaki bir sayfaya yönlendirir; istemciye her zaman kanonik path gider. | `type: "navigation"` |
+| `highlight_element` | `elementId`, `message?` | Ekrandaki bir elemanı (id, `name` veya `data-ai-field`) kaydırıp vurgular, yanında kısa not gösterir. Eleman kullanıcının göreceği ekranda değilse reddedilir. | `type: "highlight"` |
 | `search_app_knowledge` | `query` | `server/src/MCP/Knowledge/*.md` süreç rehberlerinde arar. | Rehberler |
-| `get_page_schema` | `page` | Sayfanın elemanlarını, form varsa alanlarını, kurallarını ve mesajlarını (manifest'ten) döner. | Şema nesnesi |
+| `get_page_schema` | `page` | Sayfanın katalogdaki elemanlarını ve sayfa bir endpoint'e gönderiyorsa o endpoint'in Swagger şemasındaki alanları ve kuralları döner. | Şema nesnesi |
 | `list_app_pages` | `query?`, `module?` | Sayfaları konuya veya modüle göre arar (en fazla 10). Parametresiz çağrıda modül listesini döner (sayfa azsa sayfaları da). | Sayfa listesi |
 | `get_current_page` | `currentPage` (enjekte edilir) | Bulunulan sayfanın kimliğini, adını ve formunu döner. | Sayfa nesnesi |
 
-**Formlar backend'den türetilir:** sunucu uygulama manifest'ini `[AppForm]` ile işaretlenmiş controller action'larından (opt-in) ve bu action'ların `[FromBody]` DTO'larındaki DataAnnotations'tan (`[Display]`, `[Required]`, `[StringLength]`, `[RegularExpression]`, `[EmailAddress]`, `[Suggestions]`) runtime'da üretir ve `GET /api/app-manifest` ile sunar. İstemci route'ları, ana sayfa menüsünü ve formları (`GenericFormPage`) buradan kurar. Yeni form = DTO + `[AppForm]` işaretli action; istemci kodu yok. Rehberlerdeki `[@elemanId]` referansları açılışta doğrulanır. Ayrıntılar: [FormEkleme.md](FormEkleme.md).
+**Asistan uygulamayı değiştirmeden tanır:** frontend normal bir React uygulaması olarak kalır. Asistan bulunulan ekranı DOM'dan okur (etiketler ve değerlerle canlı ekran özeti), diğer sayfaları küçük bir sayfa kataloğundan bilir ([`client/src/app/aiPages.ts`](client/src/app/aiPages.ts): kimlik, path, başlık, modül ve sayfanın gönderdiği endpoint), formların alanlarını ve kurallarını da o endpoint'in **Swagger** şemasından alır (backend'de işaretleme gerekmez). Ekrandaki alanlar Swagger alanlarıyla `data-ai-field` → `name` → `id` sırasıyla eşlenir. `npm run pages` kataloğu sunucuya aktarır, `npm run pages:check` route'lara ve JSX'e karşı doğrular; sunucu açılışta endpoint'leri ve rehber referanslarını doğrular. Ayrıntılar: [FormEkleme.md](FormEkleme.md).
 
 ---
 
@@ -286,7 +281,7 @@ Sağ alttaki akıllı asistan widget'ında bulunan mikrofon ikonu **Web Speech A
 - **Örnek Kullanım:** Mikrofona tıklayın ve söyleyin:
   > *"Öğrenci adı Ayşe, soyadı Yılmaz, TC kimlik numarası 11223344556, doğum tarihi 12 Nisan 2003 olsun"*
   
-  Asistan söylediklerinizi analiz eder, MCP `fill_form` aracını çağırır ve ekrandaki formu anında otomatik olarak doldurur!
+  Asistan söylediklerinizi analiz eder, MCP `fill_fields` aracını çağırır ve ekrandaki formu anında otomatik olarak doldurur!
 
 ---
 
