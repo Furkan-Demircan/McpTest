@@ -1,4 +1,16 @@
-import type { AppManifest, FormDefinition } from '../app/appManifest'
+export interface CreateUserPayload {
+  firstName: string
+  lastName: string
+  tcNo: string
+  email: string
+  motherName: string
+  fatherName: string
+  birthDate: string // YYYY-MM-DD
+}
+
+export interface CreateTeacherPayload extends CreateUserPayload {
+  branch: string
+}
 
 export interface UserResponse {
   id: string
@@ -12,6 +24,10 @@ export interface UserResponse {
   createdAt: string
 }
 
+export interface TeacherResponse extends UserResponse {
+  branch: string
+}
+
 export interface ApiError {
   statusCode: number
   message: string
@@ -19,11 +35,6 @@ export interface ApiError {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
-
-/** Manifest'teki "/api/..." adreslerini yapılandırılmış API tabanına çevirir. */
-export function resolveApiUrl(url: string): string {
-  return API_BASE_URL + url.replace(/^\/api(?=\/|$)/i, '')
-}
 
 /** Sunucu hata cevabından okunabilir mesaj çıkarır ({ message } veya ModelState). */
 async function readErrorMessage(response: Response, fallback: string): Promise<string> {
@@ -37,35 +48,35 @@ async function readErrorMessage(response: Response, fallback: string): Promise<s
   return fallback
 }
 
+async function postJson<T>(path: string, payload: unknown, fallback: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, fallback))
+  }
+
+  return response.json()
+}
+
 export const api = {
   /**
-   * Koddan üretilen uygulama manifest'i (GET /api/app-manifest)
+   * Yeni öğrenci ekler (POST /api/users)
    */
-  async getAppManifest(): Promise<AppManifest> {
-    const response = await fetch(`${API_BASE_URL}/app-manifest`)
-    if (!response.ok) {
-      throw new Error(await readErrorMessage(response, 'Uygulama tanımı alınamadı.'))
-    }
-    return response.json()
+  async createUser(payload: CreateUserPayload): Promise<UserResponse> {
+    return postJson('/users', payload, 'Kullanıcı kaydedilirken bir hata oluştu.')
   },
 
   /**
-   * Formu manifest'teki submit endpoint'ine gönderir; cevap gövdesini döner.
+   * Yeni öğretmen ekler (POST /api/users/teachers)
    */
-  async submitForm(form: FormDefinition, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const response = await fetch(resolveApiUrl(form.submit.url), {
-      method: form.submit.method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
-
-    if (!response.ok) {
-      throw new Error(await readErrorMessage(response, 'Kayıt sırasında bir hata oluştu.'))
-    }
-
-    return response.json()
+  async createTeacher(payload: CreateTeacherPayload): Promise<TeacherResponse> {
+    return postJson('/users/teachers', payload, 'Öğretmen kaydedilirken bir hata oluştu.')
   },
 
   /**

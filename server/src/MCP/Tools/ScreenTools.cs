@@ -15,12 +15,12 @@ public static class ScreenTools
     [Description(
     "Ekrandaki bir alanı veya butonu kullanıcıya görsel olarak işaretler (kaydırıp vurgular, yanında kısa bir not gösterir). " +
     "Kullanıcıya bir adımı anlatırken 'nereye tıklayacağını / neyi dolduracağını' göstermek için kullanılır. " +
-    "elementId uydurulmamalıdır: kullanıcının bulunduğu sayfa için ekran özetinden, başka bir sayfa için " +
+    "elementId, ekran özetindeki kimlik veya alan adıdır (field/name/id); uydurulmamalıdır. Başka bir sayfa için " +
     "get_page_schema veya search_app_knowledge sonucundan alınır. " +
     "Eleman başka bir sayfadaysa önce navigate_to_page çağrılmalıdır.")]
     public static HighlightResult HighlightElement(
         AppManifestStore manifest,
-        [Description("İşaretlenecek elemanın kimliği, örn: 'firstName', 'studentSubmit', 'homeStudentLink'.")]
+        [Description("İşaretlenecek elemanın kimliği veya alan adı, örn: 'firstName', 'studentSubmit', 'homeStudentLink'.")]
         string elementId,
         [Description("Elemanın yanında gösterilecek kısa yönlendirme notu, örn: 'Önce öğrencinin adını yazın'.")]
         string? message = null)
@@ -37,42 +37,9 @@ public static class ScreenTools
             {
                 ElementId = elementId,
                 Message = message,
-                PageId = manifest.FindElement(elementId)?.PageId
+                PageIds = manifest.FindElements(elementId).Select(element => element.PageId).Distinct().ToList()
             }
         };
     }
 
-    [McpServerTool(UseStructuredContent = true)]
-    [Description(
-    "Ekrandaki form DIŞI bir giriş alanına (arama kutusu, filtre vb.) değer yazar; " +
-    "örn. kayıt listesinde bir kişiyi aramak için usersSearch. " +
-    "Form alanları için KULLANILMAZ, onlar için fill_form kullanılır. " +
-    "elementId ekran özetinden (veya navigasyondan sonraki sayfa için get_page_schema'dan) alınır. " +
-    "Sonucu (örn. listede ne çıktığını) göremezsin; kullanıcıya kontrol ettir.")]
-    public static InputValueResult SetInputValue(
-        AppManifestStore manifest,
-        [Description("Değer yazılacak giriş alanının kimliği, örn: 'usersSearch'.")]
-        string elementId,
-        [Description("Yazılacak değer. Boş string alanı temizler.")]
-        string value)
-    {
-        if (string.IsNullOrWhiteSpace(elementId))
-        {
-            throw new McpException("elementId boş olamaz.");
-        }
-
-        var element = manifest.FindElement(elementId);
-
-        return new InputValueResult
-        {
-            Target = elementId,
-            Data = new InputValueData
-            {
-                ElementId = elementId,
-                Value = value,
-                PageId = element?.PageId,
-                ElementKind = element?.Kind
-            }
-        };
-    }
 }

@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type UserResponse } from '../services/api'
-import { elementLabel, findPage, navLinks } from '../app/appManifest'
-import { useManifest } from '../app/useManifest'
 import './UsersListPage.css'
 
 export const UsersListPage: React.FC = () => {
@@ -10,9 +8,6 @@ export const UsersListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const manifest = useManifest()
-  // Kayıt ekleme linkleri: manifest'teki formlu sayfalar (yeni form kendiliğinden eklenir)
-  const addLinks = navLinks(manifest).filter((link) => link.page.formId)
 
   const loadUsers = async () => {
     setIsLoading(true)
@@ -79,11 +74,12 @@ export const UsersListPage: React.FC = () => {
             ← Ana Sayfa
           </Link>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {addLinks.map((link) => (
-              <Link key={link.id} to={link.page.path} className="nav-btn-add">
-                + {link.label}
-              </Link>
-            ))}
+            <Link to="/form" className="nav-btn-add">
+              + 👨‍🎓 Öğrenci Ekle
+            </Link>
+            <Link to="/teacher" className="nav-btn-add" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)' }}>
+              + 👩‍🏫 Öğretmen Ekle
+            </Link>
           </div>
         </div>
 
@@ -101,7 +97,7 @@ export const UsersListPage: React.FC = () => {
           <span className="search-icon">🔍</span>
           <input
             type="text"
-            placeholder={`${elementLabel(findPage(manifest, 'users'), 'usersSearch')}...`}
+            placeholder="Ad, soyad, TC No veya e-posta ile ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             id="usersSearch"
@@ -180,11 +176,12 @@ export const UsersListPage: React.FC = () => {
             </button>
           ) : (
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              {addLinks.map((link) => (
-                <Link key={link.id} to={link.page.path} className="btn-primary">
-                  {link.label}
-                </Link>
-              ))}
+              <Link to="/form" className="btn-primary">
+                👨‍🎓 Öğrenci Ekle
+              </Link>
+              <Link to="/teacher" className="btn-primary" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)' }}>
+                👩‍🏫 Öğretmen Ekle
+              </Link>
             </div>
           )}
         </div>

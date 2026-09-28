@@ -5,22 +5,11 @@ export interface ChatMessage {
   content: string
 }
 
-export interface FormData {
-  firstName: string
-  lastName: string
-  tcNo: string
-  email: string
-  motherName: string
-  fatherName: string
-  birthDate: string
-}
-
 export interface AiChatRequest {
   currentPage?: string
-  activeFormId?: string
+  // Kullanıcının gördüğü ekran (DOM); asistan uygulamanın state'ini görmez
   screen?: ScreenSnapshot
   messages: ChatMessage[]
-  formData: FormData | Record<string, unknown>
 }
 
 export interface AiAction {

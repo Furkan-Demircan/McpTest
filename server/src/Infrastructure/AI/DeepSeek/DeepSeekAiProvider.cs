@@ -32,13 +32,16 @@ public class DeepSeekAiProvider : IAiProvider
 
         return string.Join('\n', screen.Elements.Select(element =>
         {
+            var isInput = element.Kind is "input" or "textarea" or "select";
             var states = new List<string>();
             if (element.Required == true) states.Add("zorunlu");
-            if (element.Filled is not null) states.Add(element.Filled.Value ? "dolu" : "boş");
+            if (isInput) states.Add(string.IsNullOrEmpty(element.Value) ? "boş" : $"değer: \"{element.Value}\"");
             if (element.Disabled == true) states.Add("pasif");
 
+            // fill_fields / highlight_element bu referansı kullanır (data-ai-field → name → id)
+            var reference = element.Field ?? element.Name ?? element.Id;
             var state = states.Count > 0 ? $" — {string.Join(", ", states)}" : string.Empty;
-            return $"- {element.Id} [{element.Kind}] \"{element.Label}\"{state}";
+            return $"- {reference} [{element.Kind}] \"{element.Label}\"{state}";
         }));
     }
 
@@ -63,14 +66,6 @@ public class DeepSeekAiProvider : IAiProvider
             _configuration["DeepSeek:Model"]
             ?? "deepseek-v4-flash";
 
-        var currentFormData =
-            JsonSerializer.Serialize(
-                request.FormData,
-                new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
         var deepSeekMessages = new List<object>
         {
             new
@@ -87,10 +82,10 @@ public class DeepSeekAiProvider : IAiProvider
                 - Form doldurma konusunda yardımcı olmak.
 
                 Uygulamayı nereden bilirsin (bilgi kaynakları):
-                - Ekran özeti (bağlam mesajında): kullanıcının ŞU AN gördüğü elemanlar,
-                  kimlikleri ve dolu/boş durumları. Bulunduğu sayfa için tek doğru kaynak budur.
+                - Ekran özeti (bağlam mesajında): kullanıcının ŞU AN gördüğü elemanlar, etiketleri
+                  ve alanlardaki değerler. Bulunduğu sayfa için tek doğru kaynak budur.
                 - `list_app_pages` / `get_page_schema`: sayfalar ve başka bir sayfadaki alanlar,
-                  zorunluluklar, validasyon kuralları. Sayfa listesini ezbere bilmezsin; gerekirse sor.
+                  zorunluluklar, kurallar (backend şemasından). Sayfa listesini ezbere bilmezsin; gerekirse sor.
                 - `search_app_knowledge`: süreç bilgisi (adım sırası, iş kuralları, bilinen kısıtlar).
 
                 Önemli sınırlar:
@@ -101,8 +96,6 @@ public class DeepSeekAiProvider : IAiProvider
                 - CRUD işlemlerini kendin gerçekleştiremezsin.
                 - Gerçekleştirmediğin bir işlemi gerçekleştirmiş gibi söyleme.
                 - Bilmediğin bilgileri uydurma.
-
-                Boş string değerleri doldurulmamış kabul et.
 
                 Kullanıcıyı yönlendirme (destek asistanı davranışı):
                 - Kullanıcı bir işlemi nasıl yapacağını sorarsa, bilmediğini/bulamadığını söylerse
@@ -127,17 +120,15 @@ public class DeepSeekAiProvider : IAiProvider
                 - Kullanıcı sadece bilgi istiyorsa (işlem yapmak istediği belli değilse)
                   sayfaya kendin götürme; anlat ve götürmeyi teklif et.
 
-                Form doldurma / güncelleme kuralları:
-                - Kullanıcı herhangi bir form bilgisi verdiğinde MUTLAKA `fill_form` tool'unu çağır.
-                - 'values' anahtarları formun alan adlarıdır: aktif form için bağlamdaki form verisinin
-                  anahtarları, başka bir form için get_page_schema'daki field.name değerleri.
-                - 'target' boşsa kullanıcının bulunduğu sayfanın formu kullanılır. Bilgi başka bir
-                  forma aitse (örn. ana sayfadayken öğretmen bilgisi verildi) önce o sayfaya
-                  `navigate_to_page` ile git ve 'target' olarak o sayfanın formId'sini ver.
-                - Formsuz bir sayfadaysan ve hangi forma ait olduğu belli değilse kullanıcıya sor.
-                - Form DIŞI giriş alanları (arama kutusu, filtre) için `fill_form` değil
-                  `set_input_value` kullan; kimliği ekran özetinden al.
-                - Mevcut formda zaten bulunan değişmemiş bilgileri tekrar göndermene gerek yok, yalnızca yeni ve güncellenmiş bilgileri ilet.
+                Ekrana yazma kuralları:
+                - Kullanıcı bir forma girilecek bilgi verdiğinde veya bir alana (arama kutusu, filtre)
+                  yazılmasını istediğinde MUTLAKA `fill_fields` tool'unu çağır.
+                - 'values' anahtarları ekran özetindeki referanslardır (satır başındaki kimlik).
+                - Bilgi başka bir sayfanın formuna aitse (örn. ana sayfadayken öğretmen bilgisi verildi)
+                  önce `navigate_to_page` ile o sayfaya git; anahtarlar o sayfanın get_page_schema
+                  alan adlarıdır (field.name).
+                - Formsuz bir sayfadaysan ve bilginin hangi forma ait olduğu belli değilse kullanıcıya sor.
+                - Alanda zaten aynı değer varsa tekrar yazma; yalnızca yeni ve değişen bilgileri ilet.
 
                 Tool hataları:
                 - Bir tool {"error": ...} döndürürse hatayı oku, mümkünse düzeltilmiş argümanlarla tekrar dene; değilse kullanıcıya açıkça bildir.
@@ -153,12 +144,9 @@ public class DeepSeekAiProvider : IAiProvider
                 Mevcut bağlam (her istekte istemciden gelir):
                 - Kullanıcının bulunduğu sayfa: {request.CurrentPage ?? "bilinmiyor"}
                 - Sayfanın başlığı: {request.Screen?.Heading ?? "bilinmiyor"}
-                - Aktif form: {request.ActiveFormId ?? "yok (bu sayfada form yok)"}
-                - Aktif formun güncel verisi (boş string = doldurulmamış):
-                {currentFormData}
 
                 Ekran özeti — kullanıcının şu an gördüğü etkileşimli elemanlar
-                (format: kimlik [tür] "etiket" — durum):
+                (format: referans [tür] "etiket" — durum/değer):
                 {FormatScreen(request.Screen)}
                 """
             }

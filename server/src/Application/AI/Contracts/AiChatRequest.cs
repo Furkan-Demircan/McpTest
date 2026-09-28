@@ -6,12 +6,8 @@ public class AiChatRequest
 {
     public string? CurrentPage { get; set; }
 
-    // Kullanıcının bulunduğu sayfadaki formun kimliği (manifest form.id); formsuz sayfada null
-    public string? ActiveFormId { get; set; }
-
+    // Kullanıcının o an gördüğü ekran; form değerleri dahil (uygulama state'i değil, DOM)
     public ScreenSnapshot? Screen { get; set; }
 
     public List<ChatMessage> Messages { get; set; } = [];
-
-    public Dictionary<string, string?> FormData { get; set; } = [];
 }

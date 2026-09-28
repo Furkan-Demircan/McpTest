@@ -48,10 +48,8 @@ public class AiAssistantService : IAiAssistantService
             var aiRequest = new AiRequest
             {
                 CurrentPage = request.CurrentPage,
-                ActiveFormId = request.ActiveFormId,
                 Screen = request.Screen,
                 Messages = messages,
-                FormData = request.FormData,
                 Tools = tools
             };
 
@@ -98,9 +96,7 @@ public class AiAssistantService : IAiAssistantService
                     arguments =
                         BuildToolArguments(
                             toolCall,
-                            request.FormData,
                             request.CurrentPage,
-                            request.ActiveFormId,
                             tools);
 
                     result =
@@ -197,11 +193,8 @@ public class AiAssistantService : IAiAssistantService
 
     private Dictionary<string, object?> BuildToolArguments(
         AiToolCall toolCall,
-        Dictionary<string, string?> formData,
         string? currentPage,
-        string? activeFormId,
-        List<AiToolDefinition> tools
-        )
+        List<AiToolDefinition> tools)
     {
         var arguments =
             JsonSerializer.Deserialize<
@@ -218,45 +211,15 @@ public class AiAssistantService : IAiAssistantService
             return arguments;
         }
 
-        if (toolCall.Name == "fill_form")
+        // Model bazen alanları values sarmalayıcısı olmadan düz verir
+        if (toolCall.Name == "fill_fields" && !arguments.ContainsKey("values"))
         {
-            if (!arguments.ContainsKey("values"))
-            {
-                var values = new Dictionary<string, object?>();
-                string? target = null;
-
-                foreach (var kvp in arguments)
-                {
-                    if (kvp.Key.Equals("target", StringComparison.OrdinalIgnoreCase))
-                    {
-                        target = kvp.Value?.ToString();
-                    }
-                    else
-                    {
-                        values[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                arguments.Clear();
-                arguments["values"] = values;
-                if (!string.IsNullOrWhiteSpace(target))
-                {
-                    arguments["target"] = target;
-                }
-            }
-
-            // Hedef verilmediyse kullanıcının bulunduğu sayfanın formu (istemci manifest'ten çözer)
-            if ((!arguments.ContainsKey("target") || arguments["target"] is null) &&
-                !string.IsNullOrWhiteSpace(activeFormId))
-            {
-                arguments["target"] = activeFormId;
-            }
+            arguments = new Dictionary<string, object?> { ["values"] = arguments };
         }
 
         _toolContextResolver.ApplyContext(
             tool,
             arguments,
-            formData,
             currentPage);
 
         return arguments;
@@ -267,11 +230,10 @@ public class AiAssistantService : IAiAssistantService
     {
         return action.Type switch
         {
-            AiActionTypes.FormPatch => true,
+            AiActionTypes.FillFields => true,
             AiActionTypes.Navigation => true,
             AiActionTypes.Notification => true,
             AiActionTypes.Highlight => true,
-            AiActionTypes.InputValue => true,
             _ => false
         };
     }
@@ -280,10 +242,8 @@ public class AiAssistantService : IAiAssistantService
     /// İstemcide uygulanamayacağı baştan belli olan UI aksiyonlarını yakalar.
     /// İstemci aksiyonun sonucunu modele geri bildiremediği için (tek yönlü akış)
     /// bu kontrol olmadan model başarısız bir işlemi "yaptım" diye anlatır.
-    /// - form_patch: hedef form çözülebilmeli (formsuz sayfada target şart)
-    /// - highlight / input_value: eleman, kullanıcının aksiyonlar uygulandıktan sonra
-    ///   göreceği ekranda olmalı; navigasyon olduysa hedef sayfada, olmadıysa ekran özetinde
-    /// - input_value: form alanına değil, form dışı giriş alanına yazar
+    /// Aksiyonun hedefi, kullanıcının aksiyonlar uygulandıktan sonra göreceği ekranda
+    /// olmalı: navigasyon olduysa hedef sayfada (manifest), olmadıysa ekran özetinde.
     /// Sorun varsa modele gidecek hata mesajını döner.
     /// </summary>
     private static string? ValidateUiAction(
@@ -291,61 +251,104 @@ public class AiAssistantService : IAiAssistantService
         string? navigatedPageId,
         ScreenSnapshot? screen)
     {
-        if (action.Type == AiActionTypes.FormPatch)
+        return action.Type switch
         {
-            return string.IsNullOrWhiteSpace(action.Target)
-                ? "Kullanıcının bulunduğu sayfada form yok ve hedef form (target) verilmedi; form doldurulmadı. " +
-                  "Form dışı bir giriş alanına (arama kutusu, filtre) yazmak için set_input_value kullan; " +
-                  "bir forma yazmak için o formun sayfasına git ve target ver."
-                : null;
+            AiActionTypes.FillFields => ValidateFillFields(action, navigatedPageId, screen),
+            AiActionTypes.Highlight => ValidateHighlight(action, navigatedPageId, screen),
+            _ => null
+        };
+    }
+
+    private static string? ValidateFillFields(
+        AiAction action,
+        string? navigatedPageId,
+        ScreenSnapshot? screen)
+    {
+        if (!action.Data.TryGetProperty("values", out var values) ||
+            values.ValueKind != JsonValueKind.Object)
+        {
+            return "fill_fields için values boş.";
         }
 
-        if (action.Type is not (AiActionTypes.Highlight or AiActionTypes.InputValue))
-        {
-            return null;
-        }
-
-        var elementId = GetDataString(action, "elementId");
-        var elementPageId = GetDataString(action, "pageId");
-
-        if (action.Type == AiActionTypes.InputValue)
-        {
-            // Manifest'te form alanı olarak tanımlıysa form durumu (FormContext) üzerinden yazılmalı
-            if (GetDataString(action, "elementKind") == "field")
-            {
-                return $"'{elementId}' bir form alanı; set_input_value yerine fill_form kullan " +
-                       "(values anahtarı alanın name değeridir, element id değil).";
-            }
-
-            var onScreen = screen?.Elements.FirstOrDefault(element => element.Id == elementId);
-            if (navigatedPageId == null && onScreen != null &&
-                onScreen.Kind is not ("input" or "textarea" or "select"))
-            {
-                return $"'{elementId}' bir giriş alanı değil ({onScreen.Kind}); değer yazılamaz.";
-            }
-        }
+        var keys = values.EnumerateObject().Select(item => item.Name).ToList();
 
         if (navigatedPageId != null)
         {
-            return elementPageId == null || elementPageId == navigatedPageId
+            // Hedef sayfa henüz ekranda değil; alanlarını Swagger şemasından (manifest) biliyoruz
+            var fieldPages = action.Data.TryGetProperty("fieldPages", out var pages) ? pages : default;
+            var unknown = keys
+                .Where(key => !GetStrings(fieldPages, key).Contains(navigatedPageId))
+                .ToList();
+
+            return unknown.Count == 0
                 ? null
-                : $"'{elementId}' elemanı '{elementPageId}' sayfasında; kullanıcı navigasyondan sonra " +
+                : $"'{navigatedPageId}' sayfasının formunda olmayan alan(lar): {string.Join(", ", unknown)}. " +
+                  $"Alan adları için get_page_schema('{navigatedPageId}') kullan.";
+        }
+
+        var writable = screen?.Elements
+            .Where(element => element.Kind is "input" or "textarea" or "select")
+            .ToList() ?? [];
+
+        if (writable.Count == 0)
+        {
+            return screen is null || screen.Elements.Count == 0
+                ? null // ekran özeti yoksa doğrulanamaz; istemci dener
+                : "Kullanıcının ekranında yazılabilir bir alan yok. Bir forma yazmak için önce o sayfaya git.";
+        }
+
+        var missing = keys.Where(key => !writable.Any(element => Matches(element, key))).ToList();
+
+        return missing.Count == 0
+            ? null
+            : $"Ekranda olmayan alan(lar): {string.Join(", ", missing)}. Ekrandaki alanlar: " +
+              string.Join(", ", writable.Select(Reference)) +
+              ". Alan başka bir sayfadaysa önce navigate_to_page ile oraya git.";
+    }
+
+    private static string? ValidateHighlight(
+        AiAction action,
+        string? navigatedPageId,
+        ScreenSnapshot? screen)
+    {
+        var elementId = GetDataString(action, "elementId") ?? string.Empty;
+        var pageIds = GetStrings(action.Data, "pageIds");
+
+        if (navigatedPageId != null)
+        {
+            return pageIds.Count == 0 || pageIds.Contains(navigatedPageId)
+                ? null
+                : $"'{elementId}' elemanı {string.Join(", ", pageIds)} sayfasında; kullanıcı navigasyondan sonra " +
                   $"'{navigatedPageId}' sayfasında olacak ve bu elemanı görmeyecek. " +
                   $"Hedef sayfadan bir eleman seç (get_page_schema '{navigatedPageId}').";
         }
 
         if (screen is null || screen.Elements.Count == 0 ||
-            screen.Elements.Any(element => element.Id == elementId))
+            screen.Elements.Any(element => Matches(element, elementId)))
         {
             return null;
         }
 
         return $"'{elementId}' elemanı kullanıcının şu anki ekranında yok. Ekrandaki kimlikler: " +
-               string.Join(", ", screen.Elements.Select(element => element.Id)) +
-               (elementPageId != null
-                   ? $". Bu eleman '{elementPageId}' sayfasında; önce navigate_to_page ile oraya git."
+               string.Join(", ", screen.Elements.Select(Reference)) +
+               (pageIds.Count > 0
+                   ? $". Bu eleman {string.Join(", ", pageIds)} sayfasında; önce navigate_to_page ile oraya git."
                    : ".");
     }
+
+    // İstemci elemanı aynı sırayla bulur: data-ai-field → name → id
+    private static bool Matches(ScreenElement element, string reference) =>
+        element.Field == reference || element.Name == reference || element.Id == reference;
+
+    private static string Reference(ScreenElement element) =>
+        element.Field ?? element.Name ?? element.Id;
+
+    private static List<string> GetStrings(JsonElement element, string propertyName) =>
+        element.ValueKind == JsonValueKind.Object &&
+        element.TryGetProperty(propertyName, out var value) &&
+        value.ValueKind == JsonValueKind.Array
+            ? value.EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToList()
+            : [];
 
     private static string? GetDataString(AiAction action, string propertyName) =>
         action.Data.ValueKind == JsonValueKind.Object &&

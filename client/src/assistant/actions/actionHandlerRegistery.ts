@@ -2,10 +2,9 @@ import type { AiAction } from '../../services/assistantApi'
 import type { AiActionHandler } from './types'
 
 interface ActionHandlerRegistryOptions {
-  formPatchHandler: AiActionHandler
+  fillFieldsHandler: AiActionHandler
   navigationHandler: AiActionHandler
   highlightHandler: AiActionHandler
-  inputValueHandler: AiActionHandler
 }
 
 export interface ActionHandleResult {
@@ -15,16 +14,14 @@ export interface ActionHandleResult {
 }
 
 export function createActionHandlerRegistry({
-  formPatchHandler,
+  fillFieldsHandler,
   navigationHandler,
   highlightHandler,
-  inputValueHandler,
 }: ActionHandlerRegistryOptions) {
   const handlers: Record<string, AiActionHandler> = {
-    form_patch: formPatchHandler,
+    fill_fields: fillFieldsHandler,
     navigation: navigationHandler,
     highlight: highlightHandler,
-    input_value: inputValueHandler,
   }
 
   return {

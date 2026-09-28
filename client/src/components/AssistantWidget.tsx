@@ -8,15 +8,14 @@ import {
 import {useNavigate,useLocation} from 'react-router-dom'
 
 
-import { useFormContext } from '../contexts/useFormContext'
 import {
   createActionHandlerRegistry,
   type ActionHandleResult,
 } from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 import { createHighlightHandler } from '../assistant/actions/highlightHandler'
-import { createInputValueHandler } from '../assistant/actions/inputValueHandler'
-import { createGlobalFormHandler } from '../assistant/actions/forms/globalFormHandler'
+import { createFillFieldsHandler } from '../assistant/actions/fillFieldsHandler'
+import { waitForNavigation } from '../assistant/actions/waitForElement'
 import { AssistantTrace } from './AssistantTrace'
 import { captureScreenSnapshot } from '../assistant/screenSnapshot'
 
@@ -117,18 +116,6 @@ export const AssistantWidget: React.FC = () => {
   const isListeningRef = useRef(false)
   const location = useLocation()
   const navigate = useNavigate()
-  
-  const {
-    getFormData,
-    patchFormData,
-    getFormIdByPath,
-  } = useFormContext()
-
-  const formPatchHandler = createGlobalFormHandler({
-    patchFormData,
-    getActivePath: () => location.pathname,
-    getFormIdByPath,
-  })
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const baseTextRef = useRef<string>('')
@@ -137,16 +124,16 @@ export const AssistantWidget: React.FC = () => {
 
   const isSpeechSupported = typeof window !== 'undefined' && Boolean(getSpeechRecognition())
 
+  // Asistan uygulamanın state'ine yazmaz: tüm aksiyonlar DOM ve router üzerinden
+  const fillFieldsHandler = createFillFieldsHandler()
   const navigationHandler = createNavigationHandler(navigate)
   const highlightHandler = createHighlightHandler()
-  const inputValueHandler = createInputValueHandler()
 
   const actionHandlerRegistry =
     createActionHandlerRegistry({
-      formPatchHandler,
+      fillFieldsHandler,
       navigationHandler,
       highlightHandler,
-      inputValueHandler,
     })
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -357,21 +344,21 @@ export const AssistantWidget: React.FC = () => {
         content: message.text,
       }))
 
-    const activeFormId = getFormIdByPath(location.pathname)
-    const activeFormData = activeFormId ? getFormData(activeFormId) ?? {} : {}
-
     // Tüm conversation history'yi ve kullanıcının o an gördüğü ekranın özetini gönder
     const response = await sendAssistantMessage({
       messages: chatMessages,
-      formData: activeFormData,
       currentPage: location.pathname,
-      activeFormId,
       screen: captureScreenSnapshot(),
     })
-    
-    const actionResults = (response.actions ?? []).map((action) =>
-      actionHandlerRegistry.handle(action)
-    )
+
+    // Aksiyonlar sırayla: navigasyondan sonraki aksiyonlar yeni sayfanın render olmasını bekler
+    const actionResults: ActionHandleResult[] = []
+    for (const action of response.actions ?? []) {
+      actionResults.push(actionHandlerRegistry.handle(action))
+      if (action.type === 'navigation' && typeof action.data.path === 'string') {
+        await waitForNavigation(action.data.path)
+      }
+    }
 
     const botMessage: Message = {
       id: getNextId(),

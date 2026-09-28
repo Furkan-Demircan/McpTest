@@ -1,21 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { navLinks } from '../app/appManifest'
-import { useManifest } from '../app/useManifest'
 import heroImg from '../assets/hero.png'
 import reactLogo from '../assets/react.svg'
 import viteLogo from '../assets/vite.svg'
 import './HomePage.css'
 
-// Form linkleri sırayla bu renkleri alır; formsuz sayfalar liste stilinde görünür
-const FORM_LINK_CLASSES = ['btn-go-to-form', 'btn-go-to-teacher']
-
 export const HomePage: React.FC = () => {
-  // Menü manifest'ten gelir: [AppForm(NavLabel = ...)] ile eklenen her form burada görünür
-  const links = navLinks(useManifest())
-  const formLinks = links.filter((link) => link.page.formId)
-  const otherLinks = links.filter((link) => !link.page.formId)
-
   return (
     <section id="center" className="home-container">
       <div className="hero">
@@ -31,22 +21,17 @@ export const HomePage: React.FC = () => {
         </p>
 
         <div className="home-cta">
-          {formLinks.map((link, index) => (
-            <Link
-              key={link.id}
-              id={link.id}
-              to={link.page.path}
-              className={FORM_LINK_CLASSES[index % FORM_LINK_CLASSES.length]}
-            >
-              <span>{link.label}</span>
-              <span className="btn-arrow">→</span>
-            </Link>
-          ))}
-          {otherLinks.map((link) => (
-            <Link key={link.id} id={link.id} to={link.page.path} className="btn-go-to-list">
-              <span>📋 {link.label}</span>
-            </Link>
-          ))}
+          <Link id="homeStudentLink" to="/form" className="btn-go-to-form">
+            <span>👨‍🎓 Öğrenci Ekle</span>
+            <span className="btn-arrow">→</span>
+          </Link>
+          <Link id="homeTeacherLink" to="/teacher" className="btn-go-to-teacher">
+            <span>👩‍🏫 Öğretmen Ekle</span>
+            <span className="btn-arrow">→</span>
+          </Link>
+          <Link id="homeUsersLink" to="/users" className="btn-go-to-list">
+            <span>📋 Kayıtlı Kullanıcıları Gör</span>
+          </Link>
         </div>
 
         <div className="features-preview">

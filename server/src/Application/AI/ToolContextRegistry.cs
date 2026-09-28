@@ -7,8 +7,8 @@ public class ToolContextRegistry : IToolContextRegistry
     private static readonly Dictionary<string, AiToolContextType> Contexts =
         new()
         {
-            // Form verisi artık her istekte bağlam mesajıyla modele gidiyor;
-            // tool argümanlarına ayrıca enjekte etmeye gerek yok.
+            // Ekrandaki değerler her istekte ekran özetiyle modele gider;
+            // tool argümanlarına sadece bulunulan sayfa enjekte edilir.
             ["get_current_page"] = AiToolContextType.Page,
         };
 

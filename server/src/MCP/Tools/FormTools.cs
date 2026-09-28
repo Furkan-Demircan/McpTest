@@ -10,94 +10,73 @@ namespace Application.MCP.Tools;
 [McpServerToolType]
 public static class FormTools
 {
+    // Asistan uygulamanın state'ine değil, kullanıcının gördüğü alanlara yazar (DOM).
+    // Hangi alanların yazılabileceğini sunucu ekran özetine / hedef sayfanın şemasına göre doğrular.
     [McpServerTool(UseStructuredContent = true)]
     [Description(
-    "Kullanıcının formundaki alanları genel (global) ve dinamik olarak doldurmak veya güncellemek için kullanılır. " +
-    "Kullanıcı herhangi bir form bilgisi verdiğinde bu tool MUTLAKA çağrılmalıdır. " +
-    "Doldurulacak alanlar 'values' sözlüğünde, formun alan adları (name) anahtar olarak iletilir. " +
-    "Örnek: values: {'firstName': 'Ahmet', 'lastName': 'Yılmaz', 'tcNo': '12345678901'}. " +
-    "Alan adları ekran özetindeki form verisinden veya get_page_schema'dan alınır; uydurulmamalıdır. " +
-    "Tarih alanları YYYY-MM-DD formatında iletilmelidir. Veritabanına kayıt yapmaz.")]
-    public static FormPatchResult FillForm(
+    "Kullanıcının ekranındaki alanlara değer yazar: form alanları, arama kutusu, filtre vb. " +
+    "Kullanıcı bir forma girilecek bilgi verdiğinde veya bir alana yazılması gereken bir şey istediğinde kullanılır. " +
+    "'values' anahtarları ekran özetindeki alan kimlikleridir (field; yoksa name/id). Başka bir sayfaya " +
+    "navigate_to_page ile gidildiyse anahtarlar o sayfanın get_page_schema alan adlarıdır (name). Uydurulmamalıdır. " +
+    "Örnek: values: {'firstName': 'Ahmet', 'tcNo': '12345678901'}. " +
+    "Tarihler YYYY-MM-DD formatında iletilir. Veritabanına kayıt yapmaz; kaydetmek kullanıcıya aittir.")]
+    public static FillFieldsResult FillFields(
     AppManifestStore manifest,
-    [Description("Forma aktarılacak alan ve değer çiftleri sözlüğü.")]
-    Dictionary<string, object?> values,
-    [Description("Hedef form kimliği (örn: 'studentForm', 'teacherForm'). Boş bırakılırsa kullanıcının bulunduğu sayfanın formu kullanılır.")]
-    string? target = null)
+    [Description("Alan kimliği ve yazılacak değer çiftleri sözlüğü.")]
+    Dictionary<string, object?> values)
     {
-        if (!string.IsNullOrWhiteSpace(target))
+        if (values is null || values.Count == 0)
         {
-            ValidateAgainstManifest(manifest, target, values);
+            throw new McpException("values boş olamaz.");
         }
 
         var normalizedData = new Dictionary<string, object?>();
 
-        if (values != null)
+        foreach (var (key, value) in values)
         {
-            foreach (var (key, value) in values)
-            {
-                if (value is null)
-                    continue;
+            if (value is null)
+                continue;
 
-                // Tarih kontrolü ve normalizasyonu
-                if (value is string strVal &&
-                    (key.Contains("date", StringComparison.OrdinalIgnoreCase) ||
-                    key.Contains("tarih", StringComparison.OrdinalIgnoreCase) ||
-                    strVal.Contains('.') || strVal.Contains('/')))
+            // Tarih kontrolü ve normalizasyonu
+            if (value is string strVal &&
+                (key.Contains("date", StringComparison.OrdinalIgnoreCase) ||
+                key.Contains("tarih", StringComparison.OrdinalIgnoreCase) ||
+                strVal.Contains('.') || strVal.Contains('/')))
+            {
+                var normalizedDate = NormalizeDate(strVal);
+                normalizedData[key] = normalizedDate ?? strVal;
+            }
+            else if (value is JsonElement jsonElem)
+            {
+                normalizedData[key] = jsonElem.ValueKind switch
                 {
-                    var normalizedDate = NormalizeDate(strVal);
-                    normalizedData[key] = normalizedDate ?? strVal;
-                }
-                else if (value is JsonElement jsonElem)
-                {
-                    normalizedData[key] = jsonElem.ValueKind switch
-                    {
-                        JsonValueKind.String => (key.Contains("date", StringComparison.OrdinalIgnoreCase) ||
-                                                key.Contains("tarih", StringComparison.OrdinalIgnoreCase))
-                            ? NormalizeDate(jsonElem.GetString()) ?? jsonElem.GetString()
-                            : jsonElem.GetString(),
-                        JsonValueKind.Number => jsonElem.GetDouble(),
-                        JsonValueKind.True => true,
-                        JsonValueKind.False => false,
-                        JsonValueKind.Null => null,
-                        _ => jsonElem.ToString()
-                    };
-                }
-                else
-                {
-                    normalizedData[key] = value;
-                }
+                    JsonValueKind.String => (key.Contains("date", StringComparison.OrdinalIgnoreCase) ||
+                                            key.Contains("tarih", StringComparison.OrdinalIgnoreCase))
+                        ? NormalizeDate(jsonElem.GetString()) ?? jsonElem.GetString()
+                        : jsonElem.GetString(),
+                    JsonValueKind.Number => jsonElem.GetDouble(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    JsonValueKind.Null => null,
+                    _ => jsonElem.ToString()
+                };
+            }
+            else
+            {
+                normalizedData[key] = value;
             }
         }
 
-        return new FormPatchResult
+        return new FillFieldsResult
         {
-            Target = target,
-            Data = normalizedData
+            Data = new FillFieldsData
+            {
+                Values = normalizedData,
+                FieldPages = normalizedData.Keys.ToDictionary(
+                    key => key,
+                    key => manifest.FindElements(key).Select(element => element.PageId).Distinct().ToList())
+            }
         };
-    }
-
-    // McpException mesajı modele iletilir; model doğru form/alan adlarıyla tekrar deneyebilir.
-    private static void ValidateAgainstManifest(
-        AppManifestStore manifest,
-        string target,
-        Dictionary<string, object?>? values)
-    {
-        var form = manifest.FindForm(target)
-            ?? throw new McpException(
-                $"Bilinmeyen form: '{target}'. Geçerli formlar: " +
-                string.Join(", ", manifest.Manifest.Forms.Select(item => item.Id)));
-
-        var unknownFields = (values?.Keys ?? Enumerable.Empty<string>())
-            .Where(key => form.Fields.All(field => field.Name != key))
-            .ToList();
-
-        if (unknownFields.Count > 0)
-        {
-            throw new McpException(
-                $"'{form.Id}' formunda olmayan alan(lar): {string.Join(", ", unknownFields)}. " +
-                $"Geçerli alanlar: {string.Join(", ", form.Fields.Select(field => field.Name))}");
-        }
     }
 
     public static string? NormalizeDate(string? dateStr)
