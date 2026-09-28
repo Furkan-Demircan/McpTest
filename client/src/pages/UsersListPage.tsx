@@ -56,16 +56,14 @@ export const UsersListPage: React.FC = () => {
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users
 
-    const query = searchQuery.toLowerCase().trim()
-    return users.filter(
-      (u) =>
-        u.firstName.toLowerCase().includes(query) ||
-        u.lastName.toLowerCase().includes(query) ||
-        u.tcNo.includes(query) ||
-        u.email.toLowerCase().includes(query) ||
-        u.motherName.toLowerCase().includes(query) ||
-        u.fatherName.toLowerCase().includes(query)
-    )
+    // Her kelime kaydın herhangi bir alanında geçmeli: "ahmet veli" → ad Ahmet, soyad Veli
+    const normalize = (value: string) => value.toLocaleLowerCase('tr-TR')
+    const tokens = normalize(searchQuery).split(/\s+/).filter(Boolean)
+
+    return users.filter((u) => {
+      const fields = [u.firstName, u.lastName, u.tcNo, u.email, u.motherName, u.fatherName].map(normalize)
+      return tokens.every((token) => fields.some((field) => field.includes(token)))
+    })
   }, [users, searchQuery])
 
   return (
