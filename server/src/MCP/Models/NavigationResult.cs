@@ -2,7 +2,7 @@ namespace MCP.Server.Models
 {
     public class NavigationResult
     {
-        public string Type { get; set; } = "navigation(";
+        public string Type { get; set; } = "navigation";
         public NavigationData Data { get; set; } = new();
     }
 

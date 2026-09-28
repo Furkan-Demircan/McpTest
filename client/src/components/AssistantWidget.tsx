@@ -2,21 +2,30 @@ import React, { useEffect, useRef, useState } from 'react'
 import './AssistantWidget.css'
 import {
   sendAssistantMessage,
+  type AiTraceStep,
   type ChatMessage,
 } from '../services/assistantApi'
 import {useNavigate,useLocation} from 'react-router-dom'
 
 
 import { useFormContext } from '../contexts/useFormContext'
-import { createActionHandlerRegistry } from '../assistant/actions/actionHandlerRegistery'
+import {
+  createActionHandlerRegistry,
+  type ActionHandleResult,
+} from '../assistant/actions/actionHandlerRegistery'
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 import { createGlobalFormHandler } from '../assistant/actions/forms/globalFormHandler'
+import { AssistantTrace } from './AssistantTrace'
 
 interface Message {
   id: string
   sender: 'bot' | 'user'
   text: string
   time: string
+  // Karşılama ve hata mesajları LLM geçmişine gönderilmez
+  excludeFromHistory?: boolean
+  trace?: AiTraceStep[]
+  actionResults?: ActionHandleResult[]
 }
 
 interface SpeechRecognitionResultItem {
@@ -142,6 +151,7 @@ export const AssistantWidget: React.FC = () => {
       sender: 'bot',
       text: 'Merhaba! Size nasıl yardımcı olabilirim?',
       time: 'Şimdi',
+      excludeFromHistory: true,
     },
   ])
 
@@ -329,7 +339,9 @@ export const AssistantWidget: React.FC = () => {
   try {
     // UI mesajlarını DeepSeek formatına dönüştür
     const chatMessages: ChatMessage[] =
-      nextMessages.map((message) => ({
+      nextMessages
+        .filter((message) => !message.excludeFromHistory)
+        .map((message) => ({
         role:
           message.sender === 'bot'
             ? 'assistant'
@@ -346,16 +358,17 @@ export const AssistantWidget: React.FC = () => {
       location.pathname
     ) 
     
-    response.actions?.forEach((action) => {
-  console.log('AI Action:', action)
-  actionHandlerRegistry.handle(action)
-})
+    const actionResults = (response.actions ?? []).map((action) =>
+      actionHandlerRegistry.handle(action)
+    )
 
     const botMessage: Message = {
       id: getNextId(),
       sender: 'bot',
       text: response.message,
       time: getCurrentTimeString(),
+      trace: response.trace,
+      actionResults,
     }
 
     setMessages((prev) => [
@@ -375,6 +388,7 @@ export const AssistantWidget: React.FC = () => {
       sender: 'bot',
       text: errorText,
       time: getCurrentTimeString(),
+      excludeFromHistory: true,
     }
 
     setMessages((prev) => [
@@ -453,6 +467,13 @@ export const AssistantWidget: React.FC = () => {
                 <div className="bubble-text">
                   {msg.text}
                 </div>
+
+                {msg.trace && (
+                  <AssistantTrace
+                    trace={msg.trace}
+                    actionResults={msg.actionResults ?? []}
+                  />
+                )}
 
                 <div className="bubble-time">
                   {msg.time}

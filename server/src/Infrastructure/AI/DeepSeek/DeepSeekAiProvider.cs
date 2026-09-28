@@ -26,9 +26,11 @@ public class DeepSeekAiProvider : IAiProvider
         AiRequest request,
         CancellationToken cancellationToken = default)
     {
-        var apiKey =
-            _configuration["DeepSeek:ApiKey"]
-            ?? _configuration["DEEPSEEK_API_KEY"];
+        var apiKey = _configuration["DeepSeek:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            apiKey = _configuration["DEEPSEEK_API_KEY"];
+        }
 
         if (string.IsNullOrWhiteSpace(apiKey) ||
             apiKey == "your_deepseek_api_key_here")
@@ -86,6 +88,19 @@ public class DeepSeekAiProvider : IAiProvider
                 - 'values' nesnesi içerisine forma girilecek alan adlarını ve değerlerini key-value olarak ekle (Örn: {"firstName": "Ahmet", "tcNo": "12345678901", "birthDate": "2000-01-15"} veya {"branch": "Matematik"}).
                 - Eğer kullanıcının bulunduğu sayfa veya işlem yapılan form belirli ise 'target' parametresini ayarla (örn: "studentForm", "teacherForm"), aksi halde boş bırakabilirsin.
                 - Mevcut formda zaten bulunan değişmemiş bilgileri tekrar göndermene gerek yok, yalnızca yeni ve güncellenmiş bilgileri ilet.
+
+                Tool hataları:
+                - Bir tool {"error": ...} döndürürse hatayı oku, mümkünse düzeltilmiş argümanlarla tekrar dene; değilse kullanıcıya açıkça bildir.
+                """
+            },
+            new
+            {
+                role = "system",
+                content = $"""
+                Mevcut bağlam (her istekte istemciden gelir):
+                - Kullanıcının bulunduğu sayfa: {request.CurrentPage ?? "bilinmiyor"}
+                - Aktif formun güncel verisi (boş string = doldurulmamış):
+                {currentFormData}
                 """
             }
         };

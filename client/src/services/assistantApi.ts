@@ -25,10 +25,21 @@ export interface AiAction {
   data: Record<string, unknown>
 }
 
+export interface AiTraceStep {
+  kind: 'llm' | 'tool' | 'limit'
+  iteration: number
+  name?: string
+  arguments?: string
+  result?: string
+  isError: boolean
+  durationMs: number
+}
+
 interface AiChatResponse {
   message: string
   missingFields: string[]
   actions: AiAction[]
+  trace: AiTraceStep[]
 }
 
 export async function sendAssistantMessage(
@@ -49,7 +60,9 @@ export async function sendAssistantMessage(
   })
 
   if (!response.ok) {
-    throw new Error('Asistan mesajı gönderilemedi.')
+    // GlobalExceptionMiddleware { message } döner; varsa onu göster
+    const body = await response.json().catch(() => null)
+    throw new Error(body?.message ?? 'Asistan mesajı gönderilemedi.')
   }
 
   return response.json()

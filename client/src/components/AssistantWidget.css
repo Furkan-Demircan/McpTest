@@ -229,6 +229,91 @@
   align-self: flex-end;
 }
 
+/* Trace Paneli (keşif / debug) */
+.assistant-trace {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text);
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+}
+
+.assistant-trace summary {
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--mono);
+}
+
+.assistant-trace.has-error summary {
+  color: #dc2626;
+}
+
+.trace-steps {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trace-step {
+  border-left: 3px solid var(--border);
+  padding-left: 6px;
+}
+
+.trace-step.trace-tool {
+  border-left-color: var(--accent);
+}
+
+.trace-step.trace-action {
+  border-left-color: #16a34a;
+}
+
+.trace-step.is-error {
+  border-left-color: #dc2626;
+}
+
+.trace-step-head {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-family: var(--mono);
+}
+
+.trace-kind {
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.trace-name {
+  flex: 1;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+
+.trace-ms {
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.trace-json {
+  margin: 3px 0 0;
+  padding: 4px 6px;
+  background: var(--code-bg);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.trace-label {
+  opacity: 0.6;
+}
+
 /* Yazıyor Noktaları */
 .typing-bubble {
   display: inline-flex;

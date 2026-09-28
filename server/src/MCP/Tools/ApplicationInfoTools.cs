@@ -1,4 +1,5 @@
 using MCP.Server.Models;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 
@@ -56,8 +57,10 @@ public static class ApplicationInfoTools
 
         if (!allowedPages.ContainsKey(path))
         {
-            throw new ArgumentException(
-                $"Invalid navigation path: '{path}'");
+            // McpException mesajı modele iletilir; model geçerli bir path ile tekrar deneyebilir.
+            throw new McpException(
+                $"Geçersiz sayfa: '{path}'. İzin verilen sayfalar: " +
+                string.Join(", ", allowedPages.Keys));
         }
 
         return new NavigationResult

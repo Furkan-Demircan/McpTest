@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 
 using Application.AI.Contracts;
@@ -8,6 +9,9 @@ namespace Application.AI;
 
 public class AiAssistantService : IAiAssistantService
 {
+    // Tek bir kullanıcı mesajı için izin verilen en fazla LLM ↔ tool turu.
+    private const int MaxIterations = 5;
+
     private readonly IAiProvider _aiProvider;
     private readonly IMcpClientService _mcpClientService;
     private readonly IToolContextResolver _toolContextResolver;
@@ -34,27 +38,43 @@ public class AiAssistantService : IAiAssistantService
             request.Messages);
 
         var actions = new List<AiAction>();
+        var trace = new List<AiTraceStep>();
 
-        while (true)
+        for (var iteration = 1; iteration <= MaxIterations; iteration++)
         {
             var aiRequest = new AiRequest
             {
+                CurrentPage = request.CurrentPage,
                 Messages = messages,
                 FormData = request.FormData,
                 Tools = tools
             };
+
+            var llmStopwatch = Stopwatch.StartNew();
 
             var response =
                 await _aiProvider.ChatAsync(
                     aiRequest,
                     cancellationToken);
 
+            trace.Add(new AiTraceStep
+            {
+                Kind = "llm",
+                Iteration = iteration,
+                Name = response.ToolCalls.Count == 0
+                    ? "final_answer"
+                    : $"{response.ToolCalls.Count} tool call",
+                Result = response.Content,
+                DurationMs = llmStopwatch.ElapsedMilliseconds
+            });
+
             if (response.ToolCalls.Count == 0)
             {
                 return new AiChatResponse
                 {
                     Message = response.Content ?? string.Empty,
-                    Actions = actions
+                    Actions = actions,
+                    Trace = trace
                 };
             }
 
@@ -64,29 +84,59 @@ public class AiAssistantService : IAiAssistantService
 
             foreach (var toolCall in response.ToolCalls)
             {
-                var arguments =
-                    BuildToolArguments(
-                        toolCall,
-                        request.FormData,
-                        request.CurrentPage,
-                        tools);
+                var toolStopwatch = Stopwatch.StartNew();
+                Dictionary<string, object?>? arguments = null;
+                McpToolResult result;
 
-                var result =
-                    await _mcpClientService.CallToolAsync(
-                        toolCall.Name,
-                        arguments,
-                        cancellationToken);
-
-                if (result.IsError)
+                try
                 {
-                    throw new InvalidOperationException(
-                        $"MCP tool hatası: {result.Content}");
+                    arguments =
+                        BuildToolArguments(
+                            toolCall,
+                            request.FormData,
+                            request.CurrentPage,
+                            tools);
+
+                    result =
+                        await _mcpClientService.CallToolAsync(
+                            toolCall.Name,
+                            arguments,
+                            cancellationToken);
                 }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Bozuk JSON argümanı, bilinmeyen tool vb. durumlarda
+                    // hatayı modele geri ver; model toparlanmayı deneyebilsin.
+                    result = new McpToolResult
+                    {
+                        Content = ex.Message,
+                        IsError = true
+                    };
+                }
+
+                trace.Add(new AiTraceStep
+                {
+                    Kind = "tool",
+                    Iteration = iteration,
+                    Name = toolCall.Name,
+                    Arguments = arguments is null
+                        ? toolCall.Arguments
+                        : JsonSerializer.Serialize(arguments),
+                    Result = result.StructuredContent?.GetRawText()
+                        ?? result.Content,
+                    IsError = result.IsError,
+                    DurationMs = toolStopwatch.ElapsedMilliseconds
+                });
 
                 AddToolResultMessage(
                     messages,
                     toolCall,
                     result);
+
+                if (result.IsError)
+                {
+                    continue;
+                }
 
                 if (result.StructuredContent.HasValue)
                 {
@@ -102,6 +152,21 @@ public class AiAssistantService : IAiAssistantService
                 }
             }
         }
+
+        trace.Add(new AiTraceStep
+        {
+            Kind = "limit",
+            Iteration = MaxIterations,
+            Name = $"{MaxIterations} tur limiti aşıldı",
+            IsError = true
+        });
+
+        return new AiChatResponse
+        {
+            Message = "İşlemi tamamlayamadım (tool çağrı limiti aşıldı). Lütfen isteğinizi daha net ifade edin.",
+            Actions = actions,
+            Trace = trace
+        };
     }
 
     private Dictionary<string, object?> BuildToolArguments(
@@ -253,9 +318,11 @@ public class AiAssistantService : IAiAssistantService
         AiToolCall toolCall,
         McpToolResult result)
     {
-        var content = result.StructuredContent.HasValue
-            ? result.StructuredContent.Value.GetRawText()
-            : result.Content;
+        var content = result.IsError
+            ? JsonSerializer.Serialize(new { error = result.Content })
+            : result.StructuredContent.HasValue
+                ? result.StructuredContent.Value.GetRawText()
+                : result.Content;
 
         messages.Add(new ChatMessage
         {

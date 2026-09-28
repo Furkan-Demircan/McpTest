@@ -10,6 +10,8 @@ using ModelContextProtocol.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
+AddDotEnvConfiguration(builder);
+
 // Katman Bağımlılıkları (Clean Architecture DI)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -107,3 +109,58 @@ app.MapControllers();
 app.MapMcp("/mcp");
 
 app.Run();
+
+static void AddDotEnvConfiguration(WebApplicationBuilder builder)
+{
+    var directory = new DirectoryInfo(builder.Environment.ContentRootPath);
+
+    while (directory is not null)
+    {
+        var dotEnvPath = Path.Combine(directory.FullName, ".env");
+        if (File.Exists(dotEnvPath))
+        {
+            var values = new Dictionary<string, string?>();
+
+            foreach (var rawLine in File.ReadLines(dotEnvPath))
+            {
+                var line = rawLine.Trim();
+                if (line.Length == 0 || line.StartsWith('#'))
+                {
+                    continue;
+                }
+
+                if (line.StartsWith("export ", StringComparison.Ordinal))
+                {
+                    line = line[7..].TrimStart();
+                }
+
+                var separatorIndex = line.IndexOf('=');
+                if (separatorIndex <= 0)
+                {
+                    continue;
+                }
+
+                var key = line[..separatorIndex].Trim();
+                var value = line[(separatorIndex + 1)..].Trim();
+
+                if (value.Length >= 2 &&
+                    ((value[0] == '"' && value[^1] == '"') ||
+                     (value[0] == '\'' && value[^1] == '\'')))
+                {
+                    value = value[1..^1];
+                }
+
+                // İşletim sistemi ortam değişkenleri .env değerlerinden önceliklidir.
+                if (Environment.GetEnvironmentVariable(key) is null)
+                {
+                    values[key] = value;
+                }
+            }
+
+            builder.Configuration.AddInMemoryCollection(values);
+            return;
+        }
+
+        directory = directory.Parent;
+    }
+}

@@ -8,4 +8,6 @@ public class AiChatResponse
     public List<string> MissingFields { get; set; } = [];
 
     public List<AiAction> Actions { get; set; } = [];
+
+    public List<AiTraceStep> Trace { get; set; } = [];
 }

@@ -6,6 +6,12 @@ interface ActionHandlerRegistryOptions {
   navigationHandler: AiActionHandler
 }
 
+export interface ActionHandleResult {
+  action: AiAction
+  status: 'applied' | 'unhandled' | 'failed'
+  error?: string
+}
+
 export function createActionHandlerRegistry({
   formPatchHandler,
   navigationHandler,
@@ -16,16 +22,26 @@ export function createActionHandlerRegistry({
   }
 
   return {
-    handle(action: AiAction) {
+    // Hiçbir zaman throw etmez: bilinmeyen/hatalı aksiyon botun cevabını düşürmemeli.
+    handle(action: AiAction): ActionHandleResult {
       const handler = handlers[action.type]
 
       if (!handler) {
-        throw new Error(
-          `No handler found for action type: ${action.type}`
-        )
+        console.warn(`No handler found for action type: ${action.type}`)
+        return { action, status: 'unhandled' }
       }
 
-      handler(action)
+      try {
+        handler(action)
+        return { action, status: 'applied' }
+      } catch (error) {
+        console.error('Action handler error:', error)
+        return {
+          action,
+          status: 'failed',
+          error: error instanceof Error ? error.message : String(error),
+        }
+      }
     },
   }
 }
