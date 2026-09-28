@@ -86,7 +86,12 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
     (formIdOrPath: string, patch: Record<string, unknown>) => {
       if (!patch || typeof patch !== 'object') return
 
-      const formId = resolveFormId(formIdOrPath) || 'studentForm'
+      // Bilinmeyen hedefte sessizce başka bir forma yazmak yerine hata ver;
+      // aksiyon trace'te "hata" olarak görünür.
+      const formId = resolveFormId(formIdOrPath)
+      if (!formId) {
+        throw new Error(`Hedef form bulunamadı: '${formIdOrPath}'`)
+      }
       const config = formConfigs[formId]
 
       setForms((prev) => {

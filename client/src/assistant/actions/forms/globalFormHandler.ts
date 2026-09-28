@@ -27,10 +27,13 @@ export function createGlobalFormHandler({
 
     // Hedef form belirleme:
     // 1. Aksiyonda açıkça belirtilen target varsa (örn: "studentForm", "teacherForm", "courseForm")
-    // 2. Yoksa mevcut aktif rotanın form ID'si
-    // 3. O da bulunamazsa doğrudan aktif rota path'i
+    // 2. Yoksa mevcut aktif rotanın form ID'si; ikisi de yoksa hata
     const currentPath = getActivePath()
-    const target = action.target || getFormIdByPath(currentPath) || currentPath
+    const target = action.target || getFormIdByPath(currentPath)
+
+    if (!target) {
+      throw new Error(`'${currentPath}' sayfasında form yok ve aksiyonda hedef form belirtilmemiş.`)
+    }
 
     console.log(`[GlobalFormHandler] Hedef '${target}' formuna veri aktarılıyor:`, data)
     patchFormData(target, data)

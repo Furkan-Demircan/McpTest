@@ -3,6 +3,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react'
+import { appManifest, createInitialData, getPage } from '../app/appManifest'
 
 export interface FormData {
   firstName: string
@@ -27,28 +28,12 @@ export interface TeacherFormData {
   birthDate: string
 }
 
-export const initialFormData: FormData = {
-  firstName: '',
-  lastName: '',
-  tcNo: '',
-  email: '',
-  motherName: '',
-  fatherName: '',
-  birthDate: '',
-}
+export const initialFormData = createInitialData('studentForm') as unknown as FormData
 
 export const initialStudentFormData: FormData = initialFormData
 
-export const initialTeacherFormData: TeacherFormData = {
-  firstName: '',
-  lastName: '',
-  tcNo: '',
-  email: '',
-  branch: '',
-  motherName: '',
-  fatherName: '',
-  birthDate: '',
-}
+export const initialTeacherFormData =
+  createInitialData('teacherForm') as unknown as TeacherFormData
 
 export interface FormRegistration<T extends Record<string, unknown> = Record<string, unknown>> {
   id: string
@@ -98,20 +83,19 @@ export interface FormContextType {
   setTeacherFormData: Dispatch<SetStateAction<TeacherFormData>>
 }
 
-export const DEFAULT_FORMS: Record<string, FormRegistration> = {
-  studentForm: {
-    id: 'studentForm',
-    paths: ['/form', '/ogrenci', '/ogrenci-ekle', '/student', '/student-form', '/forma'],
-    initialData: initialStudentFormData as unknown as Record<string, unknown>,
-    title: 'Öğrenci Ekleme Formu',
-  },
-  teacherForm: {
-    id: 'teacherForm',
-    paths: ['/teacher', '/teacher-form', '/ogretmen', '/ogretmen-ekle'],
-    initialData: initialTeacherFormData as unknown as Record<string, unknown>,
-    title: 'Öğretmen Ekleme Formu',
-  },
-}
+// Alias'lar route seviyesinde kanonik path'e yönlendirildiği için
+// formun tek path'i, bağlı olduğu sayfanın path'idir.
+export const DEFAULT_FORMS: Record<string, FormRegistration> = Object.fromEntries(
+  appManifest.forms.map((form) => [
+    form.id,
+    {
+      id: form.id,
+      paths: [getPage(form.pageId).path],
+      initialData: createInitialData(form.id),
+      title: form.title,
+    },
+  ])
+)
 
 export const FormContext =
   createContext<FormContextType | undefined>(undefined)

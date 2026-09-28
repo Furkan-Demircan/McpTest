@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { elementLabel } from '../app/appManifest'
 import heroImg from '../assets/hero.png'
 import reactLogo from '../assets/react.svg'
 import viteLogo from '../assets/vite.svg'
@@ -21,16 +22,16 @@ export const HomePage: React.FC = () => {
         </p>
 
         <div className="home-cta">
-          <Link to="/form" className="btn-go-to-form">
-            <span>👨‍🎓 Öğrenci Ekle</span>
+          <Link id="homeStudentLink" to="/form" className="btn-go-to-form">
+            <span>👨‍🎓 {elementLabel('home', 'homeStudentLink')}</span>
             <span className="btn-arrow">→</span>
           </Link>
-          <Link to="/teacher" className="btn-go-to-teacher">
-            <span>👩‍🏫 Öğretmen Ekle</span>
+          <Link id="homeTeacherLink" to="/teacher" className="btn-go-to-teacher">
+            <span>👩‍🏫 {elementLabel('home', 'homeTeacherLink')}</span>
             <span className="btn-arrow">→</span>
           </Link>
-          <Link to="/users" className="btn-go-to-list">
-            <span>📋 Kayıtlı Kullanıcıları Gör</span>
+          <Link id="homeUsersLink" to="/users" className="btn-go-to-list">
+            <span>📋 {elementLabel('home', 'homeUsersLink')}</span>
           </Link>
         </div>
 

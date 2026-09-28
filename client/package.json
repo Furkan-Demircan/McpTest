@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "manifest": "node scripts/export-manifest.mjs",
+    "manifest:check": "node scripts/export-manifest.mjs --check"
   },
   "dependencies": {
     "react": "^19.2.8",

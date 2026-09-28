@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type UserResponse } from '../services/api'
+import { elementLabel } from '../app/appManifest'
 import './UsersListPage.css'
 
 export const UsersListPage: React.FC = () => {
@@ -99,9 +100,10 @@ export const UsersListPage: React.FC = () => {
           <span className="search-icon">🔍</span>
           <input
             type="text"
-            placeholder="Ad, soyad, TC No veya e-posta ile ara..."
+            placeholder={`${elementLabel('users', 'usersSearch')}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            id="usersSearch"
             className="search-input"
           />
           {searchQuery && (

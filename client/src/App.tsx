@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import FormPage from './pages/FormPage'
@@ -5,47 +6,34 @@ import TeacherFormPage from './pages/TeacherFormPage'
 import UsersListPage from './pages/UsersListPage'
 import AssistantWidget from './components/AssistantWidget'
 import { FormProvider } from './contexts/FormProvider'
+import { appManifest } from './app/appManifest'
 import './App.css'
+
+// Manifest'teki sayfa kimliği → bileşen
+const PAGE_COMPONENTS: Record<string, ReactElement> = {
+  home: <HomePage />,
+  'student-create': <FormPage />,
+  'teacher-create': <TeacherFormPage />,
+  users: <UsersListPage />,
+}
 
 function App() {
   return (
     <FormProvider>
       <>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          
-          {/* Öğrenci Ekleme Formu */}
-          <Route path="/form" element={<FormPage />} />
-          <Route path="/ogrenci" element={<FormPage />} />
-          <Route path="/ogrenci-ekle" element={<FormPage />} />
-          <Route path="/student" element={<FormPage />} />
-          <Route path="/student-form" element={<FormPage />} />
-          <Route
-            path="/forma"
-            element={<Navigate to="/form" replace />}
-          />
+          {appManifest.pages.map((page) => (
+            <Route key={page.id} path={page.path} element={PAGE_COMPONENTS[page.id]} />
+          ))}
 
-          {/* Öğretmen Ekleme Formu */}
-          <Route path="/teacher" element={<TeacherFormPage />} />
-          <Route path="/teacher-form" element={<TeacherFormPage />} />
-          <Route path="/ogretmen" element={<TeacherFormPage />} />
-          <Route path="/ogretmen-ekle" element={<TeacherFormPage />} />
+          {/* Alias'lar kanonik path'e yönlenir; böylece form/sayfa eşlemesi tek path üzerinden yapılır */}
+          {appManifest.pages.flatMap((page) =>
+            page.aliases.map((alias) => (
+              <Route key={alias} path={alias} element={<Navigate to={page.path} replace />} />
+            ))
+          )}
 
-          {/* Kayıtlar Listesi */}
-          <Route path="/users" element={<UsersListPage />} />
-          <Route
-            path="/kayitlar"
-            element={<Navigate to="/users" replace />}
-          />
-          <Route
-            path="/liste"
-            element={<Navigate to="/users" replace />}
-          />
-
-          <Route
-            path="*"
-            element={<Navigate to="/" replace />}
-          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
         <AssistantWidget />

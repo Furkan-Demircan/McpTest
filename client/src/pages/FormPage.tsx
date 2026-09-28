@@ -5,7 +5,15 @@ import {
   initialStudentFormData,
 } from '../contexts/FormContext'
 import { api, type UserResponse } from '../services/api'
+import {
+  elementLabel,
+  fieldLabel,
+  validateFormData,
+} from '../app/appManifest'
 import './FormPage.css'
+
+const FORM_ID = 'studentForm'
+const PAGE_ID = 'student-create'
 
 interface FormErrors {
   [key: string]: string
@@ -44,48 +52,7 @@ function FormPage() {
   }
 
   const validate = (): boolean => {
-    const newErrors: FormErrors = {}
-
-    const firstName = (formData.firstName || '').trim()
-    const lastName = (formData.lastName || '').trim()
-    const tcNo = (formData.tcNo || '').trim()
-    const email = (formData.email || '').trim()
-    const motherName = (formData.motherName || '').trim()
-    const fatherName = (formData.fatherName || '').trim()
-    const birthDate = (formData.birthDate || '').trim()
-
-    if (!firstName) {
-      newErrors.firstName = 'Öğrenci adı zorunludur.'
-    }
-    if (!lastName) {
-      newErrors.lastName = 'Öğrenci soyadı zorunludur.'
-    }
-
-    if (!tcNo) {
-      newErrors.tcNo = 'TC Kimlik Numarası zorunludur.'
-    } else if (tcNo.length !== 11) {
-      newErrors.tcNo = 'TC Kimlik Numarası 11 haneli olmalıdır.'
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!email) {
-      newErrors.email = 'E-posta adresi zorunludur.'
-    } else if (!emailRegex.test(email)) {
-      newErrors.email = 'Geçerli bir e-posta adresi giriniz.'
-    }
-
-    if (!motherName) {
-      newErrors.motherName = 'Anne adı zorunludur.'
-    }
-
-    if (!fatherName) {
-      newErrors.fatherName = 'Baba adı zorunludur.'
-    }
-
-    if (!birthDate) {
-      newErrors.birthDate = 'Doğum tarihi seçimi zorunludur.'
-    }
-
+    const newErrors: FormErrors = validateFormData(FORM_ID, formData)
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -231,7 +198,7 @@ function FormPage() {
             {/* Ad */}
             <div className={`form-group ${errors.firstName ? 'has-error' : ''}`}>
               <label htmlFor="firstName">
-                Öğrenci Adı <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'firstName')} <span className="required-star">*</span>
               </label>
               <input
                 id="firstName"
@@ -248,7 +215,7 @@ function FormPage() {
             {/* Soyad */}
             <div className={`form-group ${errors.lastName ? 'has-error' : ''}`}>
               <label htmlFor="lastName">
-                Öğrenci Soyadı <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'lastName')} <span className="required-star">*</span>
               </label>
               <input
                 id="lastName"
@@ -265,7 +232,7 @@ function FormPage() {
             {/* TC No */}
             <div className={`form-group ${errors.tcNo ? 'has-error' : ''}`}>
               <label htmlFor="tcNo">
-                TC Kimlik Numarası <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'tcNo')} <span className="required-star">*</span>
               </label>
               <input
                 id="tcNo"
@@ -283,7 +250,7 @@ function FormPage() {
             {/* E-posta */}
             <div className={`form-group ${errors.email ? 'has-error' : ''}`}>
               <label htmlFor="email">
-                E-posta Adresi <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'email')} <span className="required-star">*</span>
               </label>
               <input
                 id="email"
@@ -300,7 +267,7 @@ function FormPage() {
             {/* Anne Adı */}
             <div className={`form-group ${errors.motherName ? 'has-error' : ''}`}>
               <label htmlFor="motherName">
-                Anne Adı <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'motherName')} <span className="required-star">*</span>
               </label>
               <input
                 id="motherName"
@@ -317,7 +284,7 @@ function FormPage() {
             {/* Baba Adı */}
             <div className={`form-group ${errors.fatherName ? 'has-error' : ''}`}>
               <label htmlFor="fatherName">
-                Baba Adı <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'fatherName')} <span className="required-star">*</span>
               </label>
               <input
                 id="fatherName"
@@ -334,7 +301,7 @@ function FormPage() {
             {/* Doğum Tarihi */}
             <div className={`form-group full-width ${errors.birthDate ? 'has-error' : ''}`}>
               <label htmlFor="birthDate">
-                Doğum Tarihi <span className="required-star">*</span>
+                {fieldLabel(FORM_ID, 'birthDate')} <span className="required-star">*</span>
               </label>
               <input
                 id="birthDate"
@@ -350,19 +317,21 @@ function FormPage() {
 
           <div className="form-buttons">
             <button
+              id="studentReset"
               type="button"
               className="btn-secondary"
               onClick={handleReset}
               disabled={isLoading}
             >
-              Temizle
+              {elementLabel(PAGE_ID, 'studentReset')}
             </button>
             <button
+              id="studentSubmit"
               type="submit"
               className="btn-primary"
               disabled={isLoading}
             >
-              {isLoading ? 'Kaydediliyor...' : 'Öğrenciyi Kaydet'}
+              {isLoading ? 'Kaydediliyor...' : elementLabel(PAGE_ID, 'studentSubmit')}
             </button>
           </div>
         </form>
