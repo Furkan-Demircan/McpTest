@@ -21,5 +21,6 @@ public class AppPageSummary
     public string Path { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Module { get; set; } = string.Empty;
     public string? FormId { get; set; }
 }

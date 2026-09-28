@@ -1,3 +1,4 @@
+using API.Forms;
 using API.Middlewares;
 using Application;
 using Application.AI;
@@ -18,7 +19,8 @@ AddDotEnvConfiguration(builder);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 // MCP sunucusunu API ile aynı işlemde yayınla.
-builder.Services.AddAppManifest();
+// Manifest koddan üretilir: [AppForm] action'ları + özel sayfalar (API/Forms)
+builder.Services.AddAppManifestFromControllers(AppPages.Configure);
 builder.Services.AddAppKnowledge();
 builder.Services
     .AddMcpServer()
@@ -111,6 +113,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapMcp("/mcp");
+
+// Manifest ve bilgi tabanını açılışta yükle: doğrulama hataları hemen loglansın.
+app.Services.GetRequiredService<AppManifestStore>();
+app.Services.GetRequiredService<IKnowledgeRetriever>();
 
 app.Run();
 

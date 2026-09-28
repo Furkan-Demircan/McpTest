@@ -53,8 +53,10 @@ export function useRegisteredForm<T extends Record<string, unknown>>(
     patchFormData(config.id, patch as Record<string, unknown>)
   }
 
+  // patchFormData boş değerleri atlar (AI yamaları için); kullanıcı girişi alanı
+  // boşaltabilmeli, bu yüzden setField tüm veriyi günceller.
   const setField = <K extends keyof T>(key: K, value: T[K]) => {
-    patchFormData(config.id, { [key as string]: value })
+    updateFormData<T>(config.id, (prev) => ({ ...prev, [key]: value }))
   }
 
   const resetData = () => {

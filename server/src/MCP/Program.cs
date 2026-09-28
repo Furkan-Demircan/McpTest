@@ -31,7 +31,9 @@ public static class McpServerHost
             });
         });
 
-        builder.Services.AddAppManifest();
+        // Ayrı çalışan MCP host'unda controller olmadığı için manifest boştur;
+        // gerçek manifest'i API host'u controller'lardan türetir.
+        builder.Services.AddAppManifest(_ => new AppManifest());
         builder.Services.AddAppKnowledge();
 
         builder.Services

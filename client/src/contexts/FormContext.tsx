@@ -1,39 +1,9 @@
+import { createContext } from 'react'
 import {
-  createContext,
-  type Dispatch,
-  type SetStateAction,
-} from 'react'
-import { appManifest, createInitialData, getPage } from '../app/appManifest'
-
-export interface FormData {
-  firstName: string
-  lastName: string
-  tcNo: string
-  email: string
-  motherName: string
-  fatherName: string
-  birthDate: string
-}
-
-export type StudentFormData = FormData
-
-export interface TeacherFormData {
-  firstName: string
-  lastName: string
-  tcNo: string
-  email: string
-  branch: string
-  motherName: string
-  fatherName: string
-  birthDate: string
-}
-
-export const initialFormData = createInitialData('studentForm') as unknown as FormData
-
-export const initialStudentFormData: FormData = initialFormData
-
-export const initialTeacherFormData =
-  createInitialData('teacherForm') as unknown as TeacherFormData
+  createInitialData,
+  findPage,
+  type AppManifest,
+} from '../app/appManifest'
 
 export interface FormRegistration<T extends Record<string, unknown> = Record<string, unknown>> {
   id: string
@@ -46,11 +16,10 @@ export interface FormRegistration<T extends Record<string, unknown> = Record<str
 export type FormStateDictionary = Record<string, Record<string, unknown>>
 
 export interface FormContextType {
-  // --- GLOBAL / DİNAMİK FORM YÖNETİMİ ---
   // Tüm formların anlık verilerini formId bazında tutan evrensel sözlük
   forms: FormStateDictionary
 
-  // Yeni bir formu sisteme kaydetme (sayfası açıldığında veya önceden)
+  // Yeni bir formu sisteme kaydetme (manifest dışı, elle yazılmış formlar için)
   registerForm: <T extends Record<string, unknown>>(config: FormRegistration<T>) => void
 
   // Form kaydını kaldırma
@@ -73,29 +42,25 @@ export interface FormContextType {
 
   // Kayıtlı tüm form konfigürasyonları
   formConfigs: Record<string, FormRegistration>
-
-  // --- GERİYE DÖNÜK UYUMLULUK (Mevcut sayfalar için) ---
-  formData: FormData
-  setFormData: Dispatch<SetStateAction<FormData>>
-  studentFormData: FormData
-  setStudentFormData: Dispatch<SetStateAction<FormData>>
-  teacherFormData: TeacherFormData
-  setTeacherFormData: Dispatch<SetStateAction<TeacherFormData>>
 }
 
-// Alias'lar route seviyesinde kanonik path'e yönlendirildiği için
-// formun tek path'i, bağlı olduğu sayfanın path'idir.
-export const DEFAULT_FORMS: Record<string, FormRegistration> = Object.fromEntries(
-  appManifest.forms.map((form) => [
-    form.id,
-    {
-      id: form.id,
-      paths: [getPage(form.pageId).path],
-      initialData: createInitialData(form.id),
-      title: form.title,
-    },
-  ])
-)
+/**
+ * Manifest'teki formların kayıtları. Alias'lar route seviyesinde kanonik path'e
+ * yönlendirildiği için formun tek path'i, bağlı olduğu sayfanın path'idir.
+ */
+export function formRegistrationsFrom(manifest: AppManifest): Record<string, FormRegistration> {
+  return Object.fromEntries(
+    manifest.forms.map((form) => [
+      form.id,
+      {
+        id: form.id,
+        paths: [findPage(manifest, form.pageId)?.path ?? ''],
+        initialData: createInitialData(form),
+        title: form.title,
+      },
+    ])
+  )
+}
 
 export const FormContext =
   createContext<FormContextType | undefined>(undefined)

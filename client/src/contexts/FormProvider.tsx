@@ -1,23 +1,26 @@
 import React, { useState, useCallback, useMemo, type ReactNode } from 'react'
 import {
   FormContext,
-  DEFAULT_FORMS,
-  type FormData,
-  type TeacherFormData,
+  formRegistrationsFrom,
   type FormRegistration,
   type FormStateDictionary,
 } from './FormContext'
+import { useManifest } from '../app/useManifest'
 
 interface FormProviderProps {
   children: ReactNode
 }
 
 export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
-  const [formConfigs, setFormConfigs] = useState<Record<string, FormRegistration>>(DEFAULT_FORMS)
+  // ManifestProvider manifest yüklenmeden render etmediği için ilk state'te hazırdır.
+  const manifest = useManifest()
+  const [formConfigs, setFormConfigs] = useState<Record<string, FormRegistration>>(() =>
+    formRegistrationsFrom(manifest)
+  )
 
   const [forms, setForms] = useState<FormStateDictionary>(() => {
     const initial: FormStateDictionary = {}
-    for (const [key, config] of Object.entries(DEFAULT_FORMS)) {
+    for (const [key, config] of Object.entries(formRegistrationsFrom(manifest))) {
       initial[key] = { ...config.initialData }
     }
     return initial
@@ -132,7 +135,10 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
       formIdOrPath: string,
       dataOrUpdater: T | ((prev: T) => T)
     ) => {
-      const formId = resolveFormId(formIdOrPath) || 'studentForm'
+      const formId = resolveFormId(formIdOrPath)
+      if (!formId) {
+        throw new Error(`Hedef form bulunamadı: '${formIdOrPath}'`)
+      }
 
       setForms((prev) => {
         const current = (prev[formId] || {}) as unknown as T
@@ -150,40 +156,6 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
     [resolveFormId]
   )
 
-  // Geriye dönük uyumluluk için setter fonksiyonları
-  const setStudentFormData = useCallback(
-    (updater: React.SetStateAction<FormData>) => {
-      setForms((prev) => {
-        const raw = prev['studentForm'] || DEFAULT_FORMS.studentForm.initialData
-        const current = raw as unknown as FormData
-        const next = typeof updater === 'function' ? updater(current) : updater
-        return {
-          ...prev,
-          studentForm: next as unknown as Record<string, unknown>,
-        }
-      })
-    },
-    []
-  )
-
-  const setTeacherFormData = useCallback(
-    (updater: React.SetStateAction<TeacherFormData>) => {
-      setForms((prev) => {
-        const raw = prev['teacherForm'] || DEFAULT_FORMS.teacherForm.initialData
-        const current = raw as unknown as TeacherFormData
-        const next = typeof updater === 'function' ? updater(current) : updater
-        return {
-          ...prev,
-          teacherForm: next as unknown as Record<string, unknown>,
-        }
-      })
-    },
-    []
-  )
-
-  const studentFormData = (forms['studentForm'] as unknown as FormData) || (DEFAULT_FORMS.studentForm.initialData as unknown as FormData)
-  const teacherFormData = (forms['teacherForm'] as unknown as TeacherFormData) || (DEFAULT_FORMS.teacherForm.initialData as unknown as TeacherFormData)
-
   const contextValue = useMemo(
     () => ({
       forms,
@@ -194,12 +166,6 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
       patchFormData,
       updateFormData,
       formConfigs,
-      formData: studentFormData,
-      setFormData: setStudentFormData,
-      studentFormData,
-      setStudentFormData,
-      teacherFormData,
-      setTeacherFormData,
     }),
     [
       forms,
@@ -210,10 +176,6 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
       patchFormData,
       updateFormData,
       formConfigs,
-      studentFormData,
-      setStudentFormData,
-      teacherFormData,
-      setTeacherFormData,
     ]
   )
 

@@ -15,10 +15,9 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
-  <!-- Bilgi tabanı ve manifest: çalışma zamanında AppContext.BaseDirectory altından okunur. -->
+  <!-- Bilgi tabanı: çalışma zamanında AppContext.BaseDirectory/Knowledge altından okunur. -->
   <ItemGroup>
     <None Include="Knowledge\**\*.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Manifest\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

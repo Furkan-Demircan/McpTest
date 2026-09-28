@@ -7,10 +7,10 @@ keywords: öğretmen, hoca, ekle, ekleme, kayıt, kaydet, yeni öğretmen, bran�
 Yeni öğretmen, Öğretmen Ekleme Formu üzerinden kaydedilir.
 
 ## Adımlar
-1. Ana sayfada [@homeTeacherLink] butonuna tıklayın.
-2. Formdaki tüm alanları doldurun; hepsi zorunludur. İlk alan [@teacherFirstName].
-3. [@teacherBranch] için listede olmayan bir branş varsa elle yazabilirsiniz.
-4. [@teacherSubmit] butonuna basın.
+1. Ana sayfada [@nav-teacher-create] butonuna tıklayın.
+2. Formdaki tüm alanları doldurun; hepsi zorunludur. İlk alan [@teacherForm-firstName].
+3. [@teacherForm-branch] için listede olmayan bir branş varsa elle yazabilirsiniz.
+4. [@teacherForm-submit] butonuna basın.
 
 ## Bilinmesi gerekenler
 - Branş bilgisi şu an yalnızca onay ekranında gösterilir; veritabanına kaydedilmez ve kayıt listesinde görünmez. Branşın kayıtlı kalması gerekiyorsa ayrıca not alın.

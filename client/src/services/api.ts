@@ -1,12 +1,4 @@
-export interface CreateUserPayload {
-  firstName: string
-  lastName: string
-  tcNo: string
-  email: string
-  motherName: string
-  fatherName: string
-  birthDate: string // YYYY-MM-DD
-}
+import type { AppManifest, FormDefinition } from '../app/appManifest'
 
 export interface UserResponse {
   id: string
@@ -28,13 +20,41 @@ export interface ApiError {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
+/** Manifest'teki "/api/..." adreslerini yapılandırılmış API tabanına çevirir. */
+export function resolveApiUrl(url: string): string {
+  return API_BASE_URL + url.replace(/^\/api(?=\/|$)/i, '')
+}
+
+/** Sunucu hata cevabından okunabilir mesaj çıkarır ({ message } veya ModelState). */
+async function readErrorMessage(response: Response, fallback: string): Promise<string> {
+  try {
+    const errorData = await response.json()
+    if (errorData.message) return errorData.message
+    if (errorData.errors) return Object.values(errorData.errors).flat().join(' ')
+  } catch {
+    return `Sunucu hatası: ${response.status} ${response.statusText}`
+  }
+  return fallback
+}
+
 export const api = {
   /**
-   * Yeni kullanıcı ekler (POST /api/users)
+   * Koddan üretilen uygulama manifest'i (GET /api/app-manifest)
    */
-  async createUser(payload: CreateUserPayload): Promise<UserResponse> {
-    const response = await fetch(`${API_BASE_URL}/users`, {
-      method: 'POST',
+  async getAppManifest(): Promise<AppManifest> {
+    const response = await fetch(`${API_BASE_URL}/app-manifest`)
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response, 'Uygulama tanımı alınamadı.'))
+    }
+    return response.json()
+  },
+
+  /**
+   * Formu manifest'teki submit endpoint'ine gönderir; cevap gövdesini döner.
+   */
+  async submitForm(form: FormDefinition, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const response = await fetch(resolveApiUrl(form.submit.url), {
+      method: form.submit.method,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -42,20 +62,7 @@ export const api = {
     })
 
     if (!response.ok) {
-      let errorMessage = 'Kullanıcı kaydedilirken bir hata oluştu.'
-      try {
-        const errorData = await response.json()
-        if (errorData.message) {
-          errorMessage = errorData.message
-        } else if (errorData.errors) {
-          // Model validation errors
-          const fieldErrors = Object.values(errorData.errors).flat()
-          errorMessage = fieldErrors.join(' ')
-        }
-      } catch {
-        errorMessage = `Sunucu hatası: ${response.status} ${response.statusText}`
-      }
-      throw new Error(errorMessage)
+      throw new Error(await readErrorMessage(response, 'Kayıt sırasında bir hata oluştu.'))
     }
 
     return response.json()

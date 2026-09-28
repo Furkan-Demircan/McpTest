@@ -7,7 +7,7 @@ keywords: kayıtlar, liste, listele, görüntüle, gör, ara, arama, bul, bulmak
 Kaydedilmiş tüm öğrenci ve öğretmenler Kayıtlı Kullanıcılar sayfasında listelenir.
 
 ## Adımlar
-1. Ana sayfada [@homeUsersLink] butonuna tıklayın.
+1. Ana sayfada [@nav-users] butonuna tıklayın.
 2. Belirli bir kişiyi bulmak için [@usersSearch] kutusuna ad, soyad, TC No veya e-posta yazın; liste anında filtrelenir. Ad ve soyadı birlikte yazabilirsiniz ("Ahmet Veli"); yazdığınız her kelime kaydın bir alanında geçiyorsa kayıt listelenir.
 3. Yeni eklediğiniz kayıt görünmüyorsa sayfadaki "Yenile" butonuna basın.
 

@@ -5,14 +5,16 @@ namespace MCP.Server.Manifest;
 public static class ManifestServiceCollectionExtensions
 {
     /// <summary>
-    /// Uygulama manifest'ini (Manifest/app-manifest.json) yükler.
-    /// Dosya `npm run manifest` ile üretilir ve build çıktısına kopyalanır (MCP.csproj).
+    /// Uygulama manifest'ini kaydeder. Manifest'i üreten taraf host'tur:
+    /// API host onu controller'lardan türetir (AddAppManifestFromControllers);
+    /// ayrı çalışan MCP host'u manifest'siz (boş) çalışır.
+    /// Fabrika ilk kullanımda bir kez çalışır.
     /// </summary>
-    public static IServiceCollection AddAppManifest(this IServiceCollection services)
+    public static IServiceCollection AddAppManifest(
+        this IServiceCollection services,
+        Func<IServiceProvider, AppManifest> factory)
     {
-        services.AddSingleton(_ =>
-            AppManifestStore.LoadFrom(
-                Path.Combine(AppContext.BaseDirectory, "Manifest", "app-manifest.json")));
+        services.AddSingleton(sp => new AppManifestStore(factory(sp)));
 
         return services;
     }

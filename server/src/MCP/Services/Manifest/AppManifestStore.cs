@@ -1,9 +1,7 @@
-using System.Text.Json;
-
 namespace MCP.Server.Manifest;
 
 /// <summary>
-/// app-manifest.json'u okur ve sayfa/form/eleman aramaları sağlar.
+/// Uygulama manifest'i üzerinde sayfa/form/eleman aramaları.
 /// Sayfalar kimlik, kanonik path veya alias ile bulunabilir.
 /// </summary>
 public class AppManifestStore
@@ -14,26 +12,17 @@ public class AppManifestStore
     {
         Manifest = manifest;
 
+        // Tekrarlanan kimlikler builder'ın doğrulamasında raporlanır; burada ilki kazanır.
         _elements = manifest.Pages
             .SelectMany(page => page.Elements.Select(element =>
                 new ManifestElement(element.Id, element.Label, element.Kind, page.Id)))
             .Concat(manifest.Forms.SelectMany(form => form.Fields.Select(field =>
                 new ManifestElement(field.ElementId, field.Label, "field", form.PageId))))
-            .ToDictionary(element => element.Id, StringComparer.Ordinal);
+            .GroupBy(element => element.Id, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
     }
 
     public AppManifest Manifest { get; }
-
-    public static AppManifestStore LoadFrom(string path)
-    {
-        var manifest = File.Exists(path)
-            ? JsonSerializer.Deserialize<AppManifest>(
-                File.ReadAllText(path),
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-            : null;
-
-        return new AppManifestStore(manifest ?? new AppManifest());
-    }
 
     public PageDefinition? FindPage(string? pageIdOrPath)
     {

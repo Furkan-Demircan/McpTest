@@ -42,6 +42,7 @@ public static class ApplicationInfoTools
                     Path = page.Path,
                     Title = page.Title,
                     Description = page.Description,
+                    Module = page.Module,
                     FormId = page.FormId
                 })
                 .ToList()
