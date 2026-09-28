@@ -6,25 +6,26 @@ namespace MCP.Server.Manifest;
 /// </summary>
 public class AppManifestStore
 {
-    private readonly Dictionary<string, ManifestElement> _elements;
+    private readonly Dictionary<string, List<ManifestElement>> _elements;
     private readonly List<(PageDefinition Page, HashSet<string> Tokens)> _pageIndex;
 
     public AppManifestStore(AppManifest manifest)
     {
         Manifest = manifest;
 
-        // Tekrarlanan kimlikler builder'ın doğrulamasında raporlanır; burada ilki kazanır.
+        // Alan adları formlar arasında tekrar edebilir (firstName hem öğrenci hem öğretmende);
+        // bu yüzden bir kimlik birden fazla sayfaya ait olabilir.
         _elements = manifest.Pages
             .SelectMany(page => page.Elements.Select(element =>
                 new ManifestElement(element.Id, element.Label, element.Kind, page.Id)))
             .Concat(manifest.Forms.SelectMany(form => form.Fields.Select(field =>
                 new ManifestElement(field.ElementId, field.Label, "field", form.PageId))))
             .GroupBy(element => element.Id, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
         _pageIndex = manifest.Pages
             .Select(page => (page, TurkishText.Tokenize(string.Join(' ',
-                new[] { page.Title, page.Description, page.NavLabel ?? string.Empty, page.Module }
+                new[] { page.Title, page.Description, page.Module }
                     .Concat(FindForm(page.FormId)?.Fields.Select(field => field.Label) ?? [])))))
             .ToList();
     }
@@ -51,8 +52,22 @@ public class AppManifestStore
         Manifest.Forms.FirstOrDefault(form =>
             form.Id.Equals(formId, StringComparison.OrdinalIgnoreCase));
 
-    public ManifestElement? FindElement(string elementId) =>
-        _elements.GetValueOrDefault(elementId);
+    /// <summary>Kimliğin geçtiği tüm sayfalardaki elemanlar.</summary>
+    public IReadOnlyList<ManifestElement> FindElements(string elementId) =>
+        _elements.GetValueOrDefault(elementId) ?? [];
+
+    /// <summary>
+    /// Elemanı bulur; sayfalar verilmişse sadece onlarda arar
+    /// (örn. rehberin "pages:" listesi veya kullanıcının gideceği sayfa).
+    /// </summary>
+    public ManifestElement? FindElement(string elementId, IReadOnlyCollection<string>? pageIds = null)
+    {
+        var candidates = FindElements(elementId);
+
+        return pageIds is null || pageIds.Count == 0
+            ? candidates.FirstOrDefault()
+            : candidates.FirstOrDefault(element => pageIds.Contains(element.PageId));
+    }
 
     public IReadOnlyList<(string Module, int PageCount)> Modules() =>
         Manifest.Pages

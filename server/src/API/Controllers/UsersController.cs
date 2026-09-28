@@ -1,4 +1,3 @@
-using API.Forms;
 using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -22,10 +21,6 @@ public class UsersController : ControllerBase
     /// Yeni bir kullanıcı kaydı oluşturur.
     /// </summary>
     [HttpPost]
-    [AppForm("studentForm", PageId = "student-create", Path = "/form",
-        Aliases = ["/ogrenci", "/ogrenci-ekle", "/student", "/student-form", "/forma"],
-        Title = "Öğrenci Ekleme Formu", Description = "Yeni öğrenci kaydı oluşturulur.",
-        Module = AppPages.Module, NavLabel = "Öğrenci Ekle", SubmitLabel = "Öğrenciyi Kaydet")]
     [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto, CancellationToken cancellationToken)
@@ -44,10 +39,6 @@ public class UsersController : ControllerBase
     /// Yeni bir öğretmen kaydı oluşturur. Öğretmen, kullanıcı tablosunda tutulur.
     /// </summary>
     [HttpPost("teachers")]
-    [AppForm("teacherForm", PageId = "teacher-create", Path = "/teacher",
-        Aliases = ["/teacher-form", "/ogretmen", "/ogretmen-ekle"],
-        Title = "Öğretmen Ekleme Formu", Description = "Yeni öğretmen kaydı oluşturulur.",
-        Module = AppPages.Module, NavLabel = "Öğretmen Ekle", SubmitLabel = "Öğretmeni Kaydet")]
     [ProducesResponseType(typeof(TeacherResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateTeacher([FromBody] CreateTeacherDto dto, CancellationToken cancellationToken)

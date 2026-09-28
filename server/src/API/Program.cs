@@ -19,8 +19,8 @@ AddDotEnvConfiguration(builder);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 // MCP sunucusunu API ile aynı işlemde yayınla.
-// Manifest koddan üretilir: [AppForm] action'ları + özel sayfalar (API/Forms)
-builder.Services.AddAppManifestFromControllers(AppPages.Configure);
+// Asistan manifest'i: sayfa kataloğu (client/src/app/aiPages.ts) + Swagger şemaları (API/Forms)
+builder.Services.AddAppManifestFromCatalog();
 builder.Services.AddAppKnowledge();
 builder.Services
     .AddMcpServer()
@@ -56,6 +56,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    // [Display] etiketlerini şemaya yazar; asistan başka sayfaların alanlarını bu etiketlerle anlatır
+    c.SchemaFilter<DisplaySchemaFilter>();
+
     c.SwaggerDoc("v1", new()
     {
         Title = "User Management Clean Architecture API",

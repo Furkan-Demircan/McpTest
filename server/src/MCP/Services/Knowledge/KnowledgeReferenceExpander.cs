@@ -17,7 +17,8 @@ public static partial class KnowledgeReferenceExpander
     {
         var content = ReferencePattern().Replace(document.Content, match =>
         {
-            var element = manifest.FindElement(match.Groups[1].Value);
+            // Aynı alan adı birden fazla formda olabilir; rehberin sayfalarında ara
+            var element = manifest.FindElement(match.Groups[1].Value, document.Pages);
             return element is null
                 ? match.Value
                 : $"\"{element.Label}\" {KindLabel(element.Kind)} [id: {element.Id}]";

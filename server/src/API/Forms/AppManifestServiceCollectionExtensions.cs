@@ -5,21 +5,17 @@ namespace API.Forms;
 public static class AppManifestServiceCollectionExtensions
 {
     /// <summary>
-    /// Manifest'i [AppForm] işaretli controller action'larından ve verilen özel
-    /// sayfalardan üretir. Üretim ilk kullanımda bir kez yapılır; tutarsızlıklar loglanır.
+    /// Asistan manifest'ini sayfa kataloğu (Manifest/app-pages.json) + Swagger'dan üretir.
+    /// Üretim ilk kullanımda bir kez yapılır; tutarsızlıklar loglanır.
     /// </summary>
-    public static IServiceCollection AddAppManifestFromControllers(
-        this IServiceCollection services,
-        Action<AppPageRegistry> configurePages)
+    public static IServiceCollection AddAppManifestFromCatalog(this IServiceCollection services)
     {
-        var registry = new AppPageRegistry();
-        configurePages(registry);
-
-        services.AddSingleton(registry);
+        services.AddSingleton<SwaggerFormSchemaProvider>();
         services.AddSingleton<AppManifestBuilder>();
         services.AddAppManifest(sp =>
         {
-            var (manifest, issues) = sp.GetRequiredService<AppManifestBuilder>().Build();
+            var catalogPath = Path.Combine(AppContext.BaseDirectory, "Manifest", "app-pages.json");
+            var (manifest, issues) = sp.GetRequiredService<AppManifestBuilder>().Build(catalogPath);
 
             var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("AppManifest");
             foreach (var issue in issues)
@@ -28,7 +24,7 @@ public static class AppManifestServiceCollectionExtensions
             }
 
             logger.LogInformation(
-                "Manifest üretildi: {PageCount} sayfa, {FormCount} form",
+                "Manifest üretildi: {PageCount} sayfa, {FormCount} form (alanlar Swagger'dan)",
                 manifest.Pages.Count, manifest.Forms.Count);
 
             return manifest;

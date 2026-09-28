@@ -28,9 +28,10 @@ public static partial class KnowledgeValidator
 
             foreach (Match match in ReferencePattern().Matches(document.Content))
             {
-                if (manifest.FindElement(match.Groups[1].Value) is null)
+                if (manifest.FindElement(match.Groups[1].Value, document.Pages) is null)
                 {
-                    issues.Add($"Rehber '{document.Id}': bilinmeyen eleman [@{match.Groups[1].Value}]");
+                    issues.Add($"Rehber '{document.Id}': [@{match.Groups[1].Value}] rehberin sayfalarında " +
+                               $"({string.Join(", ", document.Pages)}) bulunamadı");
                 }
             }
         }
