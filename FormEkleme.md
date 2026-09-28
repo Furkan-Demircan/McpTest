@@ -75,7 +75,7 @@ Sonra:
 
 ```bash
 cd client
-npm run pages         # server/src/MCP/Manifest/app-pages.json'u günceller (commit'le)
+npm run pages         # server/src/MCP/Catalog/app-pages.json'u günceller (commit'le)
 npm run pages:check   # CI'da da çalıştırılabilir
 ```
 
@@ -88,7 +88,7 @@ npm run pages:check   # CI'da da çalıştırılabilir
 
 ## 3. Backend'de ek iş yok
 
-Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger dokümanından **sadece sözleşme olarak** okur ([SwaggerFormSchemaProvider.cs](server/src/API/Forms/SwaggerFormSchemaProvider.cs)). Swashbuckle DataAnnotations'ı zaten şemaya yazar:
+Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger dokümanından **sadece sözleşme olarak** okur ([SwaggerFormSchemaProvider.cs](server/src/API/Catalog/SwaggerFormSchemaProvider.cs)). Swashbuckle DataAnnotations'ı zaten şemaya yazar:
 
 | DTO'da | Asistanın gördüğü |
 |---|---|
@@ -99,7 +99,7 @@ Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger doküma
 | `DateOnly` / `DateTime` | tarih |
 | Kalıtım (`record CreateTeacherDto : CreateUserDto`) | Temel sınıfın alanları dahil |
 
-Swagger'da olmayan ya da JSON body'si olmayan bir endpoint açılışta API loguna `Manifest doğrulaması` hatası olarak düşer.
+Swagger'da olmayan ya da JSON body'si olmayan bir endpoint açılışta API loguna `Katalog doğrulaması` hatası olarak düşer.
 
 ## 4. Süreç rehberi (önerilir)
 
@@ -129,8 +129,8 @@ keywords: ders, kurs, ekle, ekleme, ders kodu, nasıl
 ## 5. Dene
 
 1. API'yi yeniden başlat (katalog, Swagger şeması ve rehberler açılışta okunur).
-2. Logda `Manifest üretildi: N sayfa, M form` satırını ve doğrulama hatası olmadığını kontrol et.
-3. `GET /api/app-manifest` çıktısında sayfanın alanlarının geldiğini gör.
+2. Logda `Uygulama kataloğu üretildi: N sayfa, M form` satırını ve doğrulama hatası olmadığını kontrol et.
+3. Asistana "Ders ekleme formunda hangi alanlar var?" diye sor; trace panelindeki `get_page_schema` sonucunda alanların Swagger'dan geldiğini gör.
 4. Asistana sor, cevapların altındaki 🔍 trace panelinden tool'lara bak:
    - "Ders eklemem lazım, nasıl yapılır?" → `search_app_knowledge` → `navigate_to_page` → `highlight_element`
    - (Ana sayfadayken) "Matematik dersi, kodu MAT101, forma yaz" → `navigate_to_page` + `fill_fields`
@@ -143,7 +143,7 @@ keywords: ders, kurs, ekle, ekleme, ders kodu, nasıl
 |---|---|---|
 | Asistan alanı "ekranda yok" diyor | Input'ta `name`/`id` yok ya da DTO adıyla eşleşmiyor | `name`'i DTO alanıyla aynı yap veya `data-ai-field` ekle |
 | Asistan yazdı ama değer kaydedilmedi | Özel bileşen (tarih seçici, custom select, maskeli input) native input kullanmıyor | [writeValue.ts](client/src/assistant/dom/writeValue.ts)'teki `registerFieldWriter` ile o bileşene özel yazıcı ekle |
-| Başka sayfanın alanları boş geliyor | Katalogda `endpoint` yok ya da Swagger path'i farklı | Logdaki `Manifest doğrulaması` hatasına bak; endpoint'i Swagger'daki path ile yaz |
+| Başka sayfanın alanları boş geliyor | Katalogda `endpoint` yok ya da Swagger path'i farklı | Logdaki `Katalog doğrulaması` hatasına bak; endpoint'i Swagger'daki path ile yaz |
 | `pages:check` "App.tsx route'larında yok" diyor | Katalog path'i ile route farklı | İkisini eşitle |
 | Asistan yeni sayfayı bilmiyor | JSON güncellenmedi veya API yeniden başlatılmadı | `npm run pages`, API'yi yeniden başlat |
 | Asistan rehberi bulamıyor | Soru kelimeleri `keywords` ile eşleşmiyor | Kullanıcıların kullandığı kelimeleri ekle |

@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 using MCP.Server.Models;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
@@ -21,7 +21,7 @@ public static class FormTools
     "Örnek: values: {'firstName': 'Ahmet', 'tcNo': '12345678901'}. " +
     "Tarihler YYYY-MM-DD formatında iletilir. Veritabanına kayıt yapmaz; kaydetmek kullanıcıya aittir.")]
     public static FillFieldsResult FillFields(
-    AppManifestStore manifest,
+    AppCatalogStore catalog,
     [Description("Alan kimliği ve yazılacak değer çiftleri sözlüğü.")]
     Dictionary<string, object?> values)
     {
@@ -74,7 +74,7 @@ public static class FormTools
                 Values = normalizedData,
                 FieldPages = normalizedData.Keys.ToDictionary(
                     key => key,
-                    key => manifest.FindElements(key).Select(element => element.PageId).Distinct().ToList())
+                    key => catalog.FindElements(key).Select(element => element.PageId).Distinct().ToList())
             }
         };
     }

@@ -40,7 +40,7 @@ public class AiAssistantService : IAiAssistantService
         var actions = new List<AiAction>();
         var trace = new List<AiTraceStep>();
 
-        // Bu cevapta navigasyon üretildiyse kullanıcının varacağı sayfa (manifest page.id)
+        // Bu cevapta navigasyon üretildiyse kullanıcının varacağı sayfa (katalogdaki page.id)
         string? navigatedPageId = null;
 
         for (var iteration = 1; iteration <= MaxIterations; iteration++)
@@ -243,7 +243,7 @@ public class AiAssistantService : IAiAssistantService
     /// İstemci aksiyonun sonucunu modele geri bildiremediği için (tek yönlü akış)
     /// bu kontrol olmadan model başarısız bir işlemi "yaptım" diye anlatır.
     /// Aksiyonun hedefi, kullanıcının aksiyonlar uygulandıktan sonra göreceği ekranda
-    /// olmalı: navigasyon olduysa hedef sayfada (manifest), olmadıysa ekran özetinde.
+    /// olmalı: navigasyon olduysa hedef sayfada (katalog), olmadıysa ekran özetinde.
     /// Sorun varsa modele gidecek hata mesajını döner.
     /// </summary>
     private static string? ValidateUiAction(
@@ -274,7 +274,7 @@ public class AiAssistantService : IAiAssistantService
 
         if (navigatedPageId != null)
         {
-            // Hedef sayfa henüz ekranda değil; alanlarını Swagger şemasından (manifest) biliyoruz
+            // Hedef sayfa henüz ekranda değil; alanlarını Swagger şemasından (katalog) biliyoruz
             var fieldPages = action.Data.TryGetProperty("fieldPages", out var pages) ? pages : default;
             var unknown = keys
                 .Where(key => !GetStrings(fieldPages, key).Contains(navigatedPageId))

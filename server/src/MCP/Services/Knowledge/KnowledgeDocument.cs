@@ -8,7 +8,7 @@ public class KnowledgeDocument
 {
     public string Id { get; init; } = string.Empty;
     public string Title { get; init; } = string.Empty;
-    // Rehberin ilgili olduğu sayfa kimlikleri (manifest page.id)
+    // Rehberin ilgili olduğu sayfa kimlikleri (katalogdaki page.id)
     public IReadOnlyList<string> Pages { get; init; } = [];
     public IReadOnlyList<string> Keywords { get; init; } = [];
     public string Content { get; init; } = string.Empty;

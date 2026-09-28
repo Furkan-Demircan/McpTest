@@ -1,6 +1,6 @@
 // Asistanın sayfa kataloğunu sunucuya aktarır ve kaymaları yakalar.
 //
-//   npm run pages         → server/src/MCP/Manifest/app-pages.json'u üretir
+//   npm run pages         → server/src/MCP/Catalog/app-pages.json'u üretir
 //   npm run pages:check   → üretmeden doğrular (CI için); fark/hata varsa exit 1
 //
 // Doğrulamalar:
@@ -20,7 +20,7 @@ import { aiPages } from '../src/app/aiPages.ts'
 
 const clientRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const repoRoot = join(clientRoot, '..')
-const outputPath = join(repoRoot, 'server/src/MCP/Manifest/app-pages.json')
+const outputPath = join(repoRoot, 'server/src/MCP/Catalog/app-pages.json')
 const knowledgeDir = join(repoRoot, 'server/src/MCP/Knowledge')
 const appPath = join(clientRoot, 'src/App.tsx')
 const checkOnly = process.argv.includes('--check')

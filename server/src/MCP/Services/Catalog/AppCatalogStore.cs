@@ -1,37 +1,37 @@
-namespace MCP.Server.Manifest;
+namespace MCP.Server.Catalog;
 
 /// <summary>
-/// Uygulama manifest'i üzerinde sayfa/form/eleman aramaları.
+/// Uygulama kataloğu üzerinde sayfa/form/eleman aramaları.
 /// Sayfalar kimlik, kanonik path veya alias ile bulunabilir.
 /// </summary>
-public class AppManifestStore
+public class AppCatalogStore
 {
-    private readonly Dictionary<string, List<ManifestElement>> _elements;
+    private readonly Dictionary<string, List<CatalogElement>> _elements;
     private readonly List<(PageDefinition Page, HashSet<string> Tokens)> _pageIndex;
 
-    public AppManifestStore(AppManifest manifest)
+    public AppCatalogStore(AppCatalog catalog)
     {
-        Manifest = manifest;
+        Catalog = catalog;
 
         // Alan adları formlar arasında tekrar edebilir (firstName hem öğrenci hem öğretmende);
         // bu yüzden bir kimlik birden fazla sayfaya ait olabilir.
-        _elements = manifest.Pages
+        _elements = catalog.Pages
             .SelectMany(page => page.Elements.Select(element =>
-                new ManifestElement(element.Id, element.Label, element.Kind, page.Id)))
-            .Concat(manifest.Forms.SelectMany(form => form.Fields.Select(field =>
-                new ManifestElement(field.ElementId, null, "field", form.PageId))))
+                new CatalogElement(element.Id, element.Label, element.Kind, page.Id)))
+            .Concat(catalog.Forms.SelectMany(form => form.Fields.Select(field =>
+                new CatalogElement(field.ElementId, null, "field", form.PageId))))
             .GroupBy(element => element.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
         // Sayfa araması katalogdaki metinlerle yapılır (başlık, açıklama, modül, eleman etiketleri)
-        _pageIndex = manifest.Pages
+        _pageIndex = catalog.Pages
             .Select(page => (page, TurkishText.Tokenize(string.Join(' ',
                 new[] { page.Title, page.Description, page.Module }
                     .Concat(page.Elements.Select(element => element.Label))))))
             .ToList();
     }
 
-    public AppManifest Manifest { get; }
+    public AppCatalog Catalog { get; }
 
     public PageDefinition? FindPage(string? pageIdOrPath)
     {
@@ -43,25 +43,25 @@ public class AppManifestStore
         var key = pageIdOrPath.Trim();
         var path = NormalizePath(key);
 
-        return Manifest.Pages.FirstOrDefault(page =>
+        return Catalog.Pages.FirstOrDefault(page =>
             page.Id.Equals(key, StringComparison.OrdinalIgnoreCase) ||
             NormalizePath(page.Path) == path ||
             page.Aliases.Any(alias => NormalizePath(alias) == path));
     }
 
     public FormDefinition? FindForm(string? formId) =>
-        Manifest.Forms.FirstOrDefault(form =>
+        Catalog.Forms.FirstOrDefault(form =>
             form.Id.Equals(formId, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Kimliğin geçtiği tüm sayfalardaki elemanlar.</summary>
-    public IReadOnlyList<ManifestElement> FindElements(string elementId) =>
+    public IReadOnlyList<CatalogElement> FindElements(string elementId) =>
         _elements.GetValueOrDefault(elementId) ?? [];
 
     /// <summary>
     /// Elemanı bulur; sayfalar verilmişse sadece onlarda arar
     /// (örn. rehberin "pages:" listesi veya kullanıcının gideceği sayfa).
     /// </summary>
-    public ManifestElement? FindElement(string elementId, IReadOnlyCollection<string>? pageIds = null)
+    public CatalogElement? FindElement(string elementId, IReadOnlyCollection<string>? pageIds = null)
     {
         var candidates = FindElements(elementId);
 
@@ -71,7 +71,7 @@ public class AppManifestStore
     }
 
     public IReadOnlyList<(string Module, int PageCount)> Modules() =>
-        Manifest.Pages
+        Catalog.Pages
             .GroupBy(page => page.Module)
             .Select(group => (group.Key, group.Count()))
             .ToList();

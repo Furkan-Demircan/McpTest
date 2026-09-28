@@ -4,13 +4,13 @@
  * normal şekilde yazılır (App.tsx), bu dosya sadece asistana tarif eder.
  *
  * - Formun alanları ve kuralları yazılmaz: sunucu `endpoint`'in request body'sini
- *   Swagger'dan okur (server/src/API/Forms/SwaggerFormSchemaProvider.cs).
+ *   Swagger'dan okur (server/src/API/Catalog/SwaggerFormSchemaProvider.cs).
  * - Ekranda alan, Swagger alan adıyla eşlenir: data-ai-field → name → id. Input'un
  *   name'i DTO alanıyla aynıysa ek işaret gerekmez.
  * - `elements`: alan olmayan ama asistanın işaret edebilmesi istenen elemanlar
  *   (butonlar, menü linkleri, arama kutusu); JSX'te aynı id ile bulunmalı.
  *
- * `npm run pages` bunu server/src/MCP/Manifest/app-pages.json'a aktarır.
+ * `npm run pages` bunu server/src/MCP/Catalog/app-pages.json'a aktarır.
  * Node'un type stripping'i ile çalıştırıldığı için başka modül import etmez.
  */
 

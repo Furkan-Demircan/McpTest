@@ -1,4 +1,4 @@
-using API.Forms;
+using API.Catalog;
 using API.Middlewares;
 using Application;
 using Application.AI;
@@ -8,7 +8,7 @@ using Infrastructure;
 using Infrastructure.MCP;
 using Infrastructure.Persistence;
 using MCP.Server.Knowledge;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 using ModelContextProtocol.Client;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,8 +19,8 @@ AddDotEnvConfiguration(builder);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 // MCP sunucusunu API ile aynı işlemde yayınla.
-// Asistan manifest'i: sayfa kataloğu (client/src/app/aiPages.ts) + Swagger şemaları (API/Forms)
-builder.Services.AddAppManifestFromCatalog();
+// Asistan kataloğu: sayfa kataloğu (client/src/app/aiPages.ts) + Swagger şemaları (API/Forms)
+builder.Services.AddAppCatalogWithSwagger();
 builder.Services.AddAppKnowledge();
 builder.Services
     .AddMcpServer()
@@ -115,8 +115,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapMcp("/mcp");
 
-// Manifest ve bilgi tabanını açılışta yükle: doğrulama hataları hemen loglansın.
-app.Services.GetRequiredService<AppManifestStore>();
+// Uygulama kataloğunu ve bilgi tabanını açılışta yükle: doğrulama hataları hemen loglansın.
+app.Services.GetRequiredService<AppCatalogStore>();
 app.Services.GetRequiredService<IKnowledgeRetriever>();
 
 app.Run();

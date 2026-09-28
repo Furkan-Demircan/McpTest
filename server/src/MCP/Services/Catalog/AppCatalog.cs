@@ -1,16 +1,16 @@
-namespace MCP.Server.Manifest;
+namespace MCP.Server.Catalog;
 
-// Uygulama manifest'i: asistanın uygulamayı tanıması için sayfalar, formlar ve alanlar.
+// Uygulama kataloğu: asistanın uygulamayı tanıması için sayfalar, formlar ve alanlar.
 // UI'ı çizmek için değil, asistan için. API host iki kaynağı birleştirir
-// (API/Forms/AppManifestBuilder):
-// - Sayfa kataloğu (client/src/app/aiPages.ts → Manifest/app-pages.json): sayfalar,
+// (API/Catalog/AppCatalogBuilder):
+// - Sayfa kataloğu (client/src/app/aiPages.ts → Catalog/app-pages.json): sayfalar,
 //   path'ler, sayfa elemanları ve sayfanın gönderdiği endpoint
 // - Swagger (sadece sözleşme): endpoint'in request body'sindeki alan adları, tipler,
 //   zorunluluk ve kurallar
 // Kullanım bilgisi (nasıl yapılır, iş kuralları, alan etiketleri) burada değil,
 // Application Knowledge katmanındadır (Knowledge/*.md, search_app_knowledge).
 
-public class AppManifest
+public class AppCatalog
 {
     public List<PageDefinition> Pages { get; set; } = [];
     public List<FormDefinition> Forms { get; set; } = [];
@@ -44,14 +44,7 @@ public class FormDefinition
     public string Title { get; set; } = string.Empty;
     public string PageId { get; set; } = string.Empty;
     public string Module { get; set; } = "Genel";
-    public FormSubmit Submit { get; set; } = new();
     public List<FieldDefinition> Fields { get; set; } = [];
-}
-
-public class FormSubmit
-{
-    public string Method { get; set; } = "POST";
-    public string Url { get; set; } = string.Empty;
 }
 
 // Sözleşme alanı (Swagger). Etiket yoktur: kullanıcının gördüğü etiket ekran özetinden,
@@ -76,7 +69,7 @@ public class FieldRule
 }
 
 /// <summary>
-/// Ekrandaki bir elemanın manifest'teki karşılığı. Katalog elemanlarının etiketi vardır;
+/// Ekrandaki bir elemanın katalogdaki karşılığı. Katalog elemanlarının etiketi vardır;
 /// form alanlarının (Swagger) etiketi yoktur (null).
 /// </summary>
-public record ManifestElement(string Id, string? Label, string Kind, string PageId);
+public record CatalogElement(string Id, string? Label, string Kind, string PageId);

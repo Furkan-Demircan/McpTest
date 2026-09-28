@@ -12,7 +12,7 @@ namespace MCP.Server.Models
         public string ElementId { get; set; } = string.Empty;
         public string? Message { get; set; }
 
-        // Elemanın manifest'te geçtiği sayfalar (aynı alan adı birden fazla formda olabilir)
+        // Elemanın katalogda geçtiği sayfalar (aynı alan adı birden fazla formda olabilir)
         public List<string> PageIds { get; set; } = [];
     }
 }

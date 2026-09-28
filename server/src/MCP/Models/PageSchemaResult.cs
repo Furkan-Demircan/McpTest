@@ -1,4 +1,4 @@
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 
 namespace MCP.Server.Models;
 

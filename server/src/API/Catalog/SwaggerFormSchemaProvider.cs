@@ -1,9 +1,9 @@
 using System.Text.Json;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Swagger;
 
-namespace API.Forms;
+namespace API.Catalog;
 
 /// <summary>
 /// Bir endpoint'in request body şemasını uygulamanın kendi Swagger dokümanından okur ve

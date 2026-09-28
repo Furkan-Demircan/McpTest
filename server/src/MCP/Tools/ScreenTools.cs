@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 using MCP.Server.Models;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
@@ -19,7 +19,7 @@ public static class ScreenTools
     "get_page_schema veya search_app_knowledge sonucundan alınır. " +
     "Eleman başka bir sayfadaysa önce navigate_to_page çağrılmalıdır.")]
     public static HighlightResult HighlightElement(
-        AppManifestStore manifest,
+        AppCatalogStore catalog,
         [Description("İşaretlenecek elemanın kimliği veya alan adı, örn: 'firstName', 'studentSubmit', 'homeStudentLink'.")]
         string elementId,
         [Description("Elemanın yanında gösterilecek kısa yönlendirme notu, örn: 'Önce öğrencinin adını yazın'.")]
@@ -37,7 +37,7 @@ public static class ScreenTools
             {
                 ElementId = elementId,
                 Message = message,
-                PageIds = manifest.FindElements(elementId).Select(element => element.PageId).Distinct().ToList()
+                PageIds = catalog.FindElements(elementId).Select(element => element.PageId).Distinct().ToList()
             }
         };
     }

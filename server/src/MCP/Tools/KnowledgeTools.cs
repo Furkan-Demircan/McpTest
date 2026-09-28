@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using MCP.Server.Knowledge;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 using MCP.Server.Models;
 using ModelContextProtocol.Server;
 
@@ -20,7 +20,7 @@ public static class KnowledgeTools
     "onlar için get_page_schema kullanılır.")]
     public static KnowledgeSearchResult SearchAppKnowledge(
         IKnowledgeRetriever retriever,
-        AppManifestStore manifest,
+        AppCatalogStore catalog,
         [Description("Kullanıcının sorusu veya aranan konu, örn: 'öğrenci nasıl eklenir', 'TC zaten mevcut hatası'.")]
         string query)
     {
@@ -38,7 +38,7 @@ public static class KnowledgeTools
                     Id = match.Document.Id,
                     Title = match.Document.Title,
                     Pages = match.Document.Pages
-                        .Select(manifest.FindPage)
+                        .Select(catalog.FindPage)
                         .OfType<PageDefinition>()
                         .Select(page => new KnowledgeGuidePage
                         {

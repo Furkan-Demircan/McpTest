@@ -1,5 +1,5 @@
 using MCP.Server.Knowledge;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -31,9 +31,9 @@ public static class McpServerHost
             });
         });
 
-        // Ayrı çalışan MCP host'unda controller olmadığı için manifest boştur;
-        // gerçek manifest'i API host'u controller'lardan türetir.
-        builder.Services.AddAppManifest(_ => new AppManifest());
+        // Ayrı çalışan MCP host'unda Swagger olmadığı için katalog boştur;
+        // gerçek kataloğu API host'u sayfa kataloğu + Swagger'dan üretir.
+        builder.Services.AddAppCatalog(_ => new AppCatalog());
         builder.Services.AddAppKnowledge();
 
         builder.Services

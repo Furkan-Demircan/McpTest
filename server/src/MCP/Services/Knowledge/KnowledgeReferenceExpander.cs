@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using MCP.Server.Manifest;
+using MCP.Server.Catalog;
 
 namespace MCP.Server.Knowledge;
 
@@ -14,12 +14,12 @@ public static partial class KnowledgeReferenceExpander
     [GeneratedRegex(@"\[@([\w-]+)\]")]
     private static partial Regex ReferencePattern();
 
-    public static KnowledgeDocument Expand(KnowledgeDocument document, AppManifestStore manifest)
+    public static KnowledgeDocument Expand(KnowledgeDocument document, AppCatalogStore catalog)
     {
         var content = ReferencePattern().Replace(document.Content, match =>
         {
             // Aynı alan adı birden fazla formda olabilir; rehberin sayfalarında ara
-            var element = manifest.FindElement(match.Groups[1].Value, document.Pages);
+            var element = catalog.FindElement(match.Groups[1].Value, document.Pages);
             return element switch
             {
                 null => match.Value,
