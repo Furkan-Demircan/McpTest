@@ -17,6 +17,7 @@ import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 import { createHighlightHandler } from '../assistant/actions/highlightHandler'
 import { createGlobalFormHandler } from '../assistant/actions/forms/globalFormHandler'
 import { AssistantTrace } from './AssistantTrace'
+import { captureScreenSnapshot } from '../assistant/screenSnapshot'
 
 interface Message {
   id: string
@@ -353,14 +354,17 @@ export const AssistantWidget: React.FC = () => {
         content: message.text,
       }))
 
-    const activeFormData = getFormData(location.pathname) ?? {}
+    const activeFormId = getFormIdByPath(location.pathname)
+    const activeFormData = activeFormId ? getFormData(activeFormId) ?? {} : {}
 
-    // Tüm conversation history'yi gönder
-    const response = await sendAssistantMessage(
-      chatMessages,
-      activeFormData,
-      location.pathname
-    ) 
+    // Tüm conversation history'yi ve kullanıcının o an gördüğü ekranın özetini gönder
+    const response = await sendAssistantMessage({
+      messages: chatMessages,
+      formData: activeFormData,
+      currentPage: location.pathname,
+      activeFormId,
+      screen: captureScreenSnapshot(),
+    })
     
     const actionResults = (response.actions ?? []).map((action) =>
       actionHandlerRegistry.handle(action)

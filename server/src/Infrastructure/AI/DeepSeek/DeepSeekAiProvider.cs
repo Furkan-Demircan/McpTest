@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 
 using Application.AI;
+using Application.AI.Contracts;
 using Infrastructure.AI.DeepSeek.Models;
 
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,25 @@ public class DeepSeekAiProvider : IAiProvider
     {
         _httpClient = httpClient;
         _configuration = configuration;
+    }
+
+    private static string FormatScreen(ScreenSnapshot? screen)
+    {
+        if (screen is null || screen.Elements.Count == 0)
+        {
+            return "- (ekran özeti yok)";
+        }
+
+        return string.Join('\n', screen.Elements.Select(element =>
+        {
+            var states = new List<string>();
+            if (element.Required == true) states.Add("zorunlu");
+            if (element.Filled is not null) states.Add(element.Filled.Value ? "dolu" : "boş");
+            if (element.Disabled == true) states.Add("pasif");
+
+            var state = states.Count > 0 ? $" — {string.Join(", ", states)}" : string.Empty;
+            return $"- {element.Id} [{element.Kind}] \"{element.Label}\"{state}";
+        }));
     }
 
     public async Task<AiResponse> ChatAsync(
@@ -66,11 +86,12 @@ public class DeepSeekAiProvider : IAiProvider
                 - Kullanıcıyı gerektiğinde doğru sayfaya yönlendirmek.
                 - Form doldurma konusunda yardımcı olmak.
 
-                Uygulamadaki sayfalar:
-                - Ana Sayfa: /
-                - Öğrenci Ekleme Formu: /form (veya /student, /ogrenci)
-                - Öğretmen Ekleme Formu: /teacher (veya /ogretmen)
-                - Kayıtlı Kullanıcılar: /users
+                Uygulamayı nereden bilirsin (bilgi kaynakları):
+                - Ekran özeti (bağlam mesajında): kullanıcının ŞU AN gördüğü elemanlar,
+                  kimlikleri ve dolu/boş durumları. Bulunduğu sayfa için tek doğru kaynak budur.
+                - `list_app_pages` / `get_page_schema`: sayfalar ve başka bir sayfadaki alanlar,
+                  zorunluluklar, validasyon kuralları. Sayfa listesini ezbere bilmezsin; gerekirse sor.
+                - `search_app_knowledge`: süreç bilgisi (adım sırası, iş kuralları, bilinen kısıtlar).
 
                 Önemli sınırlar:
                 - Veritabanına doğrudan erişemezsin.
@@ -86,15 +107,19 @@ public class DeepSeekAiProvider : IAiProvider
                 Kullanıcıyı yönlendirme (destek asistanı davranışı):
                 - Kullanıcı bir işlemi nasıl yapacağını sorarsa, bilmediğini/bulamadığını söylerse
                   veya bir hata aldığını anlatırsa ÖNCE `search_app_knowledge` tool'unu çağır.
-                - Cevabını yalnızca dönen rehbere dayandır. Rehberde olmayan adım, alan veya
-                  özellik uydurma; rehber bulunamazsa bunu açıkça söyle.
+                - Cevabını yalnızca dönen rehbere, ekran özetine ve sayfa şemasına dayandır.
+                  Bunlarda olmayan adım, alan veya özellik uydurma; bulunamazsa açıkça söyle.
+                - Alan listesi veya kurallar gerekiyorsa: kullanıcı o sayfadaysa ekran özetini,
+                  değilse `get_page_schema` sonucunu kullan. Ekrandaki etiketlerle konuş, alan
+                  adlarını (firstName vb.) ve kimlikleri kullanıcıya gösterme.
                 - Adımları kısa, numaralı ve sade bir dille anlat; sistemi ilk kez kullanan
                   bir personele anlatır gibi, teknik terim kullanmadan.
                 - Kullanıcı işlemi şimdi yapmak istiyorsa (örn. "yeni öğrenci eklemem lazım,
                   nasıl yapacağımı bilmiyorum"): gerekiyorsa rehberdeki sayfa kimliğiyle
                   `navigate_to_page` çağır, ardından `highlight_element` ile başlaması gereken
                   ilk alanı işaretle. Zaten o sayfadaysa sadece işaretle.
-                - highlight_element kimliğini uydurma: rehberdeki [id: ...] veya get_page_schema'dan al.
+                - highlight_element kimliğini uydurma: bulunduğu sayfa için ekran özetinden,
+                  navigasyondan sonraki sayfa için rehberdeki [id: ...] veya get_page_schema'dan al.
                 - Tool çağrılarını gereksiz yere tek tek yapma; birbirine bağlı olmayanları
                   (örn. navigate_to_page + highlight_element) aynı turda birlikte çağır.
                 - Anlatımın sonunda bilgileri sana yazarak veya sesle söyleyerek formu
@@ -103,9 +128,13 @@ public class DeepSeekAiProvider : IAiProvider
                   sayfaya kendin götürme; anlat ve götürmeyi teklif et.
 
                 Form doldurma / güncelleme kuralları:
-                - Kullanıcı herhangi bir form bilgisi verdiğinde (öğrenci, öğretmen, ders, kayıt veya sayfadaki herhangi bir form) MUTLAKA `fill_form` tool'unu çağır.
-                - 'values' nesnesi içerisine forma girilecek alan adlarını ve değerlerini key-value olarak ekle (Örn: {"firstName": "Ahmet", "tcNo": "12345678901", "birthDate": "2000-01-15"} veya {"branch": "Matematik"}).
-                - Eğer kullanıcının bulunduğu sayfa veya işlem yapılan form belirli ise 'target' parametresini ayarla (örn: "studentForm", "teacherForm"), aksi halde boş bırakabilirsin.
+                - Kullanıcı herhangi bir form bilgisi verdiğinde MUTLAKA `fill_form` tool'unu çağır.
+                - 'values' anahtarları formun alan adlarıdır: aktif form için bağlamdaki form verisinin
+                  anahtarları, başka bir form için get_page_schema'daki field.name değerleri.
+                - 'target' boşsa kullanıcının bulunduğu sayfanın formu kullanılır. Bilgi başka bir
+                  forma aitse (örn. ana sayfadayken öğretmen bilgisi verildi) önce o sayfaya
+                  `navigate_to_page` ile git ve 'target' olarak o sayfanın formId'sini ver.
+                - Formsuz bir sayfadaysan ve hangi forma ait olduğu belli değilse kullanıcıya sor.
                 - Mevcut formda zaten bulunan değişmemiş bilgileri tekrar göndermene gerek yok, yalnızca yeni ve güncellenmiş bilgileri ilet.
 
                 Tool hataları:
@@ -118,8 +147,14 @@ public class DeepSeekAiProvider : IAiProvider
                 content = $"""
                 Mevcut bağlam (her istekte istemciden gelir):
                 - Kullanıcının bulunduğu sayfa: {request.CurrentPage ?? "bilinmiyor"}
+                - Sayfanın başlığı: {request.Screen?.Heading ?? "bilinmiyor"}
+                - Aktif form: {request.ActiveFormId ?? "yok (bu sayfada form yok)"}
                 - Aktif formun güncel verisi (boş string = doldurulmamış):
                 {currentFormData}
+
+                Ekran özeti — kullanıcının şu an gördüğü etkileşimli elemanlar
+                (format: kimlik [tür] "etiket" — durum):
+                {FormatScreen(request.Screen)}
                 """
             }
         };

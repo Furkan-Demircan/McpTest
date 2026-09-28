@@ -1,8 +1,14 @@
+using Application.AI.Contracts;
+
 namespace Application.AI;
 
 public class AiRequest
 {
     public string? CurrentPage { get; set; }
+
+    public string? ActiveFormId { get; set; }
+
+    public ScreenSnapshot? Screen { get; set; }
 
     public List<ChatMessage> Messages { get; set; } = [];
 

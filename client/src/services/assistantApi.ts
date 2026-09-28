@@ -1,3 +1,5 @@
+import type { ScreenSnapshot } from '../assistant/screenSnapshot'
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -15,6 +17,8 @@ export interface FormData {
 
 export interface AiChatRequest {
   currentPage?: string
+  activeFormId?: string
+  screen?: ScreenSnapshot
   messages: ChatMessage[]
   formData: FormData | Record<string, unknown>
 }
@@ -43,20 +47,14 @@ interface AiChatResponse {
 }
 
 export async function sendAssistantMessage(
-  messages: ChatMessage[],
-  formData: FormData | Record<string, unknown>,
-  currentPage?: string
+  request: AiChatRequest
 ): Promise<AiChatResponse> {
   const response = await fetch('/api/assistant/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      currentPage,
-      messages,
-      formData,
-    }),
+    body: JSON.stringify(request),
   })
 
   if (!response.ok) {

@@ -40,11 +40,16 @@ public class AiAssistantService : IAiAssistantService
         var actions = new List<AiAction>();
         var trace = new List<AiTraceStep>();
 
+        // Bu cevapta navigasyon üretildiyse kullanıcının varacağı sayfa (manifest page.id)
+        string? navigatedPageId = null;
+
         for (var iteration = 1; iteration <= MaxIterations; iteration++)
         {
             var aiRequest = new AiRequest
             {
                 CurrentPage = request.CurrentPage,
+                ActiveFormId = request.ActiveFormId,
+                Screen = request.Screen,
                 Messages = messages,
                 FormData = request.FormData,
                 Tools = tools
@@ -95,6 +100,7 @@ public class AiAssistantService : IAiAssistantService
                             toolCall,
                             request.FormData,
                             request.CurrentPage,
+                            request.ActiveFormId,
                             tools);
 
                     result =
@@ -112,6 +118,34 @@ public class AiAssistantService : IAiAssistantService
                         Content = ex.Message,
                         IsError = true
                     };
+                }
+
+                AiAction? action = null;
+
+                if (!result.IsError && result.StructuredContent.HasValue)
+                {
+                    action = TryCreateAction(result.StructuredContent.Value);
+
+                    if (action != null && !IsUiAction(action))
+                    {
+                        action = null;
+                    }
+
+                    // Uygulanamayacak bir UI aksiyonunu istemciye göndermek yerine
+                    // modele hata olarak döndür; kendini düzeltebilsin.
+                    var rejection = action is null
+                        ? null
+                        : ValidateUiAction(action, navigatedPageId, request.Screen);
+
+                    if (rejection != null)
+                    {
+                        action = null;
+                        result = new McpToolResult
+                        {
+                            Content = rejection,
+                            IsError = true
+                        };
+                    }
                 }
 
                 trace.Add(new AiTraceStep
@@ -133,22 +167,14 @@ public class AiAssistantService : IAiAssistantService
                     toolCall,
                     result);
 
-                if (result.IsError)
+                if (action != null)
                 {
-                    continue;
-                }
-
-                if (result.StructuredContent.HasValue)
-                {
-                    var action =
-                        TryCreateAction(
-                            result.StructuredContent.Value);
-
-                    if (action != null &&
-                        IsUiAction(action))
+                    if (action.Type == AiActionTypes.Navigation)
                     {
-                        actions.Add(action);
+                        navigatedPageId = GetDataString(action, "pageId");
                     }
+
+                    actions.Add(action);
                 }
             }
         }
@@ -173,6 +199,7 @@ public class AiAssistantService : IAiAssistantService
         AiToolCall toolCall,
         Dictionary<string, string?> formData,
         string? currentPage,
+        string? activeFormId,
         List<AiToolDefinition> tools
         )
     {
@@ -218,12 +245,11 @@ public class AiAssistantService : IAiAssistantService
                 }
             }
 
-            if (!arguments.ContainsKey("target") || arguments["target"] is null)
+            // Hedef verilmediyse kullanıcının bulunduğu sayfanın formu (istemci manifest'ten çözer)
+            if ((!arguments.ContainsKey("target") || arguments["target"] is null) &&
+                !string.IsNullOrWhiteSpace(activeFormId))
             {
-                if (currentPage is "/form" or "/ogrenci" or "/student" or "/ogrenci-ekle")
-                    arguments["target"] = "studentForm";
-                else if (currentPage is "/teacher" or "/ogretmen" or "/teacher-form" or "/ogretmen-ekle")
-                    arguments["target"] = "teacherForm";
+                arguments["target"] = activeFormId;
             }
         }
 
@@ -248,6 +274,53 @@ public class AiAssistantService : IAiAssistantService
             _ => false
         };
     }
+
+    /// <summary>
+    /// Highlight aksiyonu, kullanıcının aksiyonlar uygulandıktan sonra göreceği
+    /// ekranda bulunmalı: navigasyon olduysa hedef sayfada, olmadıysa ekran özetinde.
+    /// Sorun varsa modele gidecek hata mesajını döner.
+    /// </summary>
+    private static string? ValidateUiAction(
+        AiAction action,
+        string? navigatedPageId,
+        ScreenSnapshot? screen)
+    {
+        if (action.Type != AiActionTypes.Highlight)
+        {
+            return null;
+        }
+
+        var elementId = GetDataString(action, "elementId");
+        var elementPageId = GetDataString(action, "pageId");
+
+        if (navigatedPageId != null)
+        {
+            return elementPageId == null || elementPageId == navigatedPageId
+                ? null
+                : $"'{elementId}' elemanı '{elementPageId}' sayfasında; kullanıcı navigasyondan sonra " +
+                  $"'{navigatedPageId}' sayfasında olacak ve bu elemanı görmeyecek. " +
+                  $"Hedef sayfadan bir eleman seç (get_page_schema '{navigatedPageId}').";
+        }
+
+        if (screen is null || screen.Elements.Count == 0 ||
+            screen.Elements.Any(element => element.Id == elementId))
+        {
+            return null;
+        }
+
+        return $"'{elementId}' elemanı kullanıcının şu anki ekranında yok. Ekrandaki kimlikler: " +
+               string.Join(", ", screen.Elements.Select(element => element.Id)) +
+               (elementPageId != null
+                   ? $". Bu eleman '{elementPageId}' sayfasında; önce navigate_to_page ile oraya git."
+                   : ".");
+    }
+
+    private static string? GetDataString(AiAction action, string propertyName) =>
+        action.Data.ValueKind == JsonValueKind.Object &&
+        action.Data.TryGetProperty(propertyName, out var value) &&
+        value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 
     private static AiAction? TryCreateAction(
         JsonElement structuredContent)
