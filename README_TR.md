@@ -185,10 +185,10 @@ MCP Sunucusu tarafından dışa açılan ve DeepSeek AI Asistanı tarafından ku
 | `set_input_value` | `elementId`, `value` | Ekrandaki form dışı bir girişe (arama kutusu, filtre) sayfanın kendi değişiklik handler'ı üzerinden yazar. Form alanları (`fill_form` kullanılır) ve ekranda olmayan elemanlar için reddedilir. | `type: "input_value"` |
 | `search_app_knowledge` | `query` | `server/src/MCP/Knowledge/*.md` süreç rehberlerinde arar. | Rehberler |
 | `get_page_schema` | `page` | Sayfanın elemanlarını, form varsa alanlarını, kurallarını ve mesajlarını (manifest'ten) döner. | Şema nesnesi |
-| `list_app_pages` | Yok | Manifest'teki tüm sayfaları listeler. | Sayfa listesi |
+| `list_app_pages` | `query?`, `module?` | Sayfaları konuya veya modüle göre arar (en fazla 10). Parametresiz çağrıda modül listesini döner (sayfa azsa sayfaları da). | Sayfa listesi |
 | `get_current_page` | `currentPage` (enjekte edilir) | Bulunulan sayfanın kimliğini, adını ve formunu döner. | Sayfa nesnesi |
 
-**Tek kaynak:** sayfalar, route'lar, formlar, alanlar, validasyon mesajları ve eleman kimlikleri [`client/src/app/appManifest.ts`](client/src/app/appManifest.ts) içindedir. `client/` altında `npm run manifest` bunu `server/src/MCP/Manifest/app-manifest.json`'a aktarır; `npm run manifest:check` JSON bayatsa, manifest'teki bir eleman kimliği JSX'te yoksa veya bir rehber bilinmeyen bir sayfa/elemana (`[@elemanId]`) referans veriyorsa hata verir. İstemci ayrıca her istekte ekranda görünen etkileşimli elemanların özetini gönderir.
+**Formlar backend'den türetilir:** sunucu uygulama manifest'ini `[AppForm]` ile işaretlenmiş controller action'larından (opt-in) ve bu action'ların `[FromBody]` DTO'larındaki DataAnnotations'tan (`[Display]`, `[Required]`, `[StringLength]`, `[RegularExpression]`, `[EmailAddress]`, `[Suggestions]`) runtime'da üretir ve `GET /api/app-manifest` ile sunar. İstemci route'ları, ana sayfa menüsünü ve formları (`GenericFormPage`) buradan kurar. Yeni form = DTO + `[AppForm]` işaretli action; istemci kodu yok. Rehberlerdeki `[@elemanId]` referansları açılışta doğrulanır. Ayrıntılar: [FormEkleme.md](FormEkleme.md).
 
 ---
 

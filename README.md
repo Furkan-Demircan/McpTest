@@ -189,10 +189,10 @@ The MCP Server exposes the following specialized tools consumed by the DeepSeek 
 | `set_input_value` | `elementId`, `value` | Types into a non-form input on screen (search box, filter) via the page's own change handler. Rejected for form fields (use `fill_form`) and off-screen elements. | `type: "input_value"` |
 | `search_app_knowledge` | `query` | Searches the process guides in `server/src/MCP/Knowledge/*.md`. | Guides |
 | `get_page_schema` | `page` | Returns a page's elements and, if it has a form, its fields, rules and messages (from the manifest). | Schema object |
-| `list_app_pages` | None | Lists all pages in the manifest. | Page list |
+| `list_app_pages` | `query?`, `module?` | Searches pages by topic or module (max 10). Without arguments returns the module list (and pages if there are few). | Page list |
 | `get_current_page` | `currentPage` (injected) | Returns the current page id, title and form. | Page object |
 
-**Single source of truth:** pages, routes, forms, fields, validation messages and element ids live in [`client/src/app/appManifest.ts`](client/src/app/appManifest.ts). `npm run manifest` (in `client/`) exports it to `server/src/MCP/Manifest/app-manifest.json`; `npm run manifest:check` fails if the JSON is stale, a manifest element id is missing from the JSX, or a knowledge guide references an unknown page/element (`[@elementId]`). On every request the client also sends a live snapshot of the visible interactive elements.
+**Forms are derived from the backend:** the server builds the app manifest at runtime from controller actions marked with `[AppForm]` (opt-in) and their `[FromBody]` DTOs' DataAnnotations (`[Display]`, `[Required]`, `[StringLength]`, `[RegularExpression]`, `[EmailAddress]`, `[Suggestions]`), and serves it at `GET /api/app-manifest`. The client builds routes, the home menu and forms (`GenericFormPage`) from it. Adding a form means adding a DTO and an `[AppForm]` action; no client code. Knowledge guide references (`[@elementId]`) are validated at startup. See [FormEkleme.md](FormEkleme.md).
 
 ---
 
