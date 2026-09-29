@@ -13,5 +13,9 @@ namespace Application.AI.Contracts
 
         [JsonPropertyName("data")]
         public JsonElement Data { get; set; }
+
+        // İstemci sonucu bu tool çağrısına ait olarak geri bildirir
+        [JsonPropertyName("toolCallId")]
+        public string? ToolCallId { get; set; }
     }
 }

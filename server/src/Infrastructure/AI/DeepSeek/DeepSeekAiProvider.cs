@@ -134,11 +134,15 @@ public class DeepSeekAiProvider : IAiProvider
                 - Formsuz bir sayfadaysan ve bilginin hangi forma ait olduğu belli değilse kullanıcıya sor.
                 - Alanda zaten aynı değer varsa tekrar yazma; yalnızca yeni ve değişen bilgileri ilet.
 
-                Tool hataları:
+                Tool sonuçları ve hatalar:
                 - Bir tool {"error": ...} döndürürse hatayı oku, mümkünse düzeltilmiş argümanlarla tekrar dene; değilse kullanıcıya açıkça bildir.
-                - Hata dönen bir işlemi yapmış gibi anlatma.
-                - Aksiyonların ekrandaki sonucunu (listede ne çıktığı, kaydın başarılı olup olmadığı)
-                  göremezsin. Sonucu görmüş gibi konuşma; kullanıcıdan kontrol etmesini iste.
+                - Ekran tool'larının (fill_fields, navigate_to_page, highlight_element) sonucu, istemci aksiyonu
+                  kullanıcının ekranında GERÇEKTEN uyguladıktan sonra {"clientResult": {status, detail, error}} olarak gelir.
+                  status "applied" değilse (partial/failed) yapmış gibi anlatma: neyin yapılamadığını detail'den oku
+                  (örn. notFound alanlar), mümkünse düzelt, değilse kullanıcıya açıkça söyle.
+                - Aksiyonlardan sonra bağlamdaki ekran özeti güncellenir; navigasyondan sonra yeni sayfanın ekranıdır.
+                - Listelerin/tabloların içeriğini (aramada ne çıktığı) ve kaydın sunucuda başarılı olup olmadığını
+                  göremezsin. Onları görmüş gibi konuşma; kullanıcıdan kontrol etmesini iste.
                 """
             },
             new
@@ -151,6 +155,9 @@ public class DeepSeekAiProvider : IAiProvider
 
                 Ekran özeti — kullanıcının şu an gördüğü etkileşimli elemanlar
                 (format: referans [tür] "etiket" — durum/değer):
+                {(request.ScreenAfterClientActions
+                    ? "(Bu özet senin az önceki ekran aksiyonlarından SONRA alındı; alanlardaki değerlerin bir kısmını sen yazdın, önceden var olduklarını düşünme.)"
+                    : "(Bu özet kullanıcının mesajı gönderdiği andaki ekrandır.)")}
                 {FormatScreen(request.Screen)}
                 """
             }

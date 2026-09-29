@@ -6,7 +6,7 @@ namespace Application.AI.Contracts;
 /// </summary>
 public class AiTraceStep
 {
-    // "llm" | "tool" | "limit"
+    // "llm" | "tool" | "client" (istemcinin bildirdiği aksiyon sonucu) | "limit"
     public string Kind { get; set; } = string.Empty;
 
     public int Iteration { get; set; }

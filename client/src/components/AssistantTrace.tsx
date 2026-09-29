@@ -10,12 +10,13 @@ interface AssistantTraceProps {
 const kindLabel: Record<AiTraceStep['kind'], string> = {
   llm: 'LLM',
   tool: 'TOOL',
+  client: 'İSTEMCİ',
   limit: 'LİMİT',
 }
 
 const actionStatusLabel: Record<ActionHandleResult['status'], string> = {
   applied: 'uygulandı',
-  unhandled: 'handler yok',
+  partial: 'kısmen',
   failed: 'hata',
 }
 
@@ -95,6 +96,9 @@ export const AssistantTrace: React.FC<AssistantTraceProps> = ({
               <span className="trace-ms">{actionStatusLabel[result.status]}</span>
             </div>
             {result.error && <pre className="trace-json">{result.error}</pre>}
+            {result.detail && result.status !== 'applied' && (
+              <pre className="trace-json">{JSON.stringify(result.detail, null, 2)}</pre>
+            )}
           </li>
         ))}
       </ol>

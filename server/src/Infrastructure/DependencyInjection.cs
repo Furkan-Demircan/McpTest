@@ -23,6 +23,9 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, UserRepository>();
 
+        // İstemci aksiyonlarını bekleyen sohbet turları (tek sunucu örneği için bellekte)
+        services.AddSingleton<IPendingTurnStore, InMemoryPendingTurnStore>();
+
         // DeepSeek AI Client Yapılandırması
         services.AddHttpClient<IAiProvider, DeepSeekAiProvider>((serviceProvider, client) =>
         {

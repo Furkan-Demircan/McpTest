@@ -15,41 +15,121 @@ public class AiAssistantService : IAiAssistantService
     private readonly IAiProvider _aiProvider;
     private readonly IMcpClientService _mcpClientService;
     private readonly IToolContextResolver _toolContextResolver;
+    private readonly IPendingTurnStore _pendingTurnStore;
 
     public AiAssistantService(
         IAiProvider aiProvider,
         IMcpClientService mcpClientService,
-        IToolContextResolver toolContextResolver)
+        IToolContextResolver toolContextResolver,
+        IPendingTurnStore pendingTurnStore)
     {
         _aiProvider = aiProvider;
         _mcpClientService = mcpClientService;
         _toolContextResolver = toolContextResolver;
+        _pendingTurnStore = pendingTurnStore;
     }
 
-    public async Task<AiChatResponse> ChatAsync(
+    public Task<AiChatResponse> ChatAsync(
         AiChatRequest request,
         CancellationToken cancellationToken = default)
+    {
+        var turn = new PendingTurn
+        {
+            CurrentPage = request.CurrentPage,
+            Messages = new List<ChatMessage>(request.Messages)
+        };
+
+        return RunLoopAsync(turn, request.Screen, screenAfterClientActions: false, cancellationToken);
+    }
+
+    public async Task<AiChatResponse?> ContinueAsync(
+        AiContinueRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var turn = _pendingTurnStore.Take(request.ContinuationId);
+        if (turn is null)
+        {
+            return null;
+        }
+
+        // Bekleyen her UI tool çağrısının sonucu, istemcinin gerçekten uyguladığı sonuçtur.
+        foreach (var pending in turn.Pending)
+        {
+            var result = request.Results.FirstOrDefault(item => item.ToolCallId == pending.ToolCallId)
+                ?? new AiActionResult
+                {
+                    ToolCallId = pending.ToolCallId,
+                    Status = "failed",
+                    Error = "İstemci bu aksiyonun sonucunu bildirmedi."
+                };
+
+            var content = JsonSerializer.Serialize(new
+            {
+                clientResult = new
+                {
+                    status = result.Status,
+                    detail = result.Detail,
+                    error = result.Error
+                }
+            });
+
+            turn.Messages.Add(new ChatMessage
+            {
+                Role = "tool",
+                ToolCallId = pending.ToolCallId,
+                Content = content
+            });
+
+            // Navigasyon gerçekten olduysa kullanıcı artık yeni sayfada
+            if (pending.Action.Type == AiActionTypes.Navigation && result.Status == "applied")
+            {
+                turn.CurrentPage = GetDataString(pending.Action, "path") ?? turn.CurrentPage;
+            }
+
+            turn.Trace.Add(new AiTraceStep
+            {
+                Kind = "client",
+                Iteration = turn.IterationsUsed,
+                Name = $"{pending.ToolName} → {result.Status}",
+                Result = content,
+                IsError = result.Status != "applied"
+            });
+        }
+
+        turn.Pending.Clear();
+
+        return await RunLoopAsync(turn, request.Screen, screenAfterClientActions: true, cancellationToken);
+    }
+
+    /// <summary>
+    /// LLM ↔ tool döngüsü. Sunucuda çalışan tool'ların (rehber, şema...) sonucu hemen modele
+    /// yazılır. UI tool'larının sonucu ise istemci aksiyonu uygulayana kadar bekletilir:
+    /// o LLM turunda UI aksiyonu varsa tur kaydedilir ve istemciye awaiting_client döner.
+    /// </summary>
+    private async Task<AiChatResponse> RunLoopAsync(
+        PendingTurn turn,
+        ScreenSnapshot? screen,
+        bool screenAfterClientActions,
+        CancellationToken cancellationToken)
     {
         var tools =
             await _mcpClientService.GetToolDefinitionsAsync(
                 cancellationToken);
 
-        var messages = new List<ChatMessage>(
-            request.Messages);
-
-        var actions = new List<AiAction>();
-        var trace = new List<AiTraceStep>();
-
-        // Bu cevapta navigasyon üretildiyse kullanıcının varacağı sayfa (katalogdaki page.id)
+        // Bu adımda navigasyon üretildiyse kullanıcının varacağı sayfa (katalogdaki page.id).
+        // Her devam adımı yeni ekran özetiyle başladığı için sıfırlanır.
         string? navigatedPageId = null;
 
-        for (var iteration = 1; iteration <= MaxIterations; iteration++)
+        while (turn.IterationsUsed < MaxIterations)
         {
+            var iteration = ++turn.IterationsUsed;
+
             var aiRequest = new AiRequest
             {
-                CurrentPage = request.CurrentPage,
-                Screen = request.Screen,
-                Messages = messages,
+                CurrentPage = turn.CurrentPage,
+                Screen = screen,
+                ScreenAfterClientActions = screenAfterClientActions,
+                Messages = turn.Messages,
                 Tools = tools
             };
 
@@ -60,7 +140,7 @@ public class AiAssistantService : IAiAssistantService
                     aiRequest,
                     cancellationToken);
 
-            trace.Add(new AiTraceStep
+            turn.Trace.Add(new AiTraceStep
             {
                 Kind = "llm",
                 Iteration = iteration,
@@ -75,14 +155,14 @@ public class AiAssistantService : IAiAssistantService
             {
                 return new AiChatResponse
                 {
+                    Status = AiChatStatus.Completed,
                     Message = response.Content ?? string.Empty,
-                    Actions = actions,
-                    Trace = trace
+                    Trace = TakeNewTrace(turn)
                 };
             }
 
             AddAssistantToolCallMessage(
-                messages,
+                turn.Messages,
                 response);
 
             foreach (var toolCall in response.ToolCalls)
@@ -96,7 +176,7 @@ public class AiAssistantService : IAiAssistantService
                     arguments =
                         BuildToolArguments(
                             toolCall,
-                            request.CurrentPage,
+                            turn.CurrentPage,
                             tools);
 
                     result =
@@ -127,11 +207,11 @@ public class AiAssistantService : IAiAssistantService
                         action = null;
                     }
 
-                    // Uygulanamayacak bir UI aksiyonunu istemciye göndermek yerine
-                    // modele hata olarak döndür; kendini düzeltebilsin.
+                    // Uygulanamayacağı baştan belli bir UI aksiyonunu istemciye göndermek
+                    // yerine modele hata olarak döndür; gidiş-dönüş olmadan düzeltebilsin.
                     var rejection = action is null
                         ? null
-                        : ValidateUiAction(action, navigatedPageId, request.Screen);
+                        : ValidateUiAction(action, navigatedPageId, screen);
 
                     if (rejection != null)
                     {
@@ -144,11 +224,11 @@ public class AiAssistantService : IAiAssistantService
                     }
                 }
 
-                trace.Add(new AiTraceStep
+                turn.Trace.Add(new AiTraceStep
                 {
                     Kind = "tool",
                     Iteration = iteration,
-                    Name = toolCall.Name,
+                    Name = action is null ? toolCall.Name : $"{toolCall.Name} (istemci sonucu bekleniyor)",
                     Arguments = arguments is null
                         ? toolCall.Arguments
                         : JsonSerializer.Serialize(arguments),
@@ -158,24 +238,41 @@ public class AiAssistantService : IAiAssistantService
                     DurationMs = toolStopwatch.ElapsedMilliseconds
                 });
 
-                AddToolResultMessage(
-                    messages,
-                    toolCall,
-                    result);
-
-                if (action != null)
+                if (action is null)
                 {
-                    if (action.Type == AiActionTypes.Navigation)
-                    {
-                        navigatedPageId = GetDataString(action, "pageId");
-                    }
-
-                    actions.Add(action);
+                    AddToolResultMessage(
+                        turn.Messages,
+                        toolCall,
+                        result);
+                    continue;
                 }
+
+                // UI aksiyonu: sonucu istemci uyguladıktan sonra ContinueAsync'te yazılır
+                action.ToolCallId = toolCall.Id;
+                turn.Pending.Add(new PendingToolCall(toolCall.Id, toolCall.Name, action));
+
+                if (action.Type == AiActionTypes.Navigation)
+                {
+                    navigatedPageId = GetDataString(action, "pageId");
+                }
+            }
+
+            if (turn.Pending.Count > 0)
+            {
+                var pendingActions = turn.Pending.Select(pending => pending.Action).ToList();
+                var trace = TakeNewTrace(turn);
+
+                return new AiChatResponse
+                {
+                    Status = AiChatStatus.AwaitingClient,
+                    ContinuationId = _pendingTurnStore.Save(turn),
+                    Actions = pendingActions,
+                    Trace = trace
+                };
             }
         }
 
-        trace.Add(new AiTraceStep
+        turn.Trace.Add(new AiTraceStep
         {
             Kind = "limit",
             Iteration = MaxIterations,
@@ -185,10 +282,18 @@ public class AiAssistantService : IAiAssistantService
 
         return new AiChatResponse
         {
+            Status = AiChatStatus.Completed,
             Message = "İşlemi tamamlayamadım (tool çağrı limiti aşıldı). Lütfen isteğinizi daha net ifade edin.",
-            Actions = actions,
-            Trace = trace
+            Trace = TakeNewTrace(turn)
         };
+    }
+
+    // Her cevapta istemciye sadece daha önce gönderilmemiş trace adımları gider
+    private static List<AiTraceStep> TakeNewTrace(PendingTurn turn)
+    {
+        var steps = turn.Trace.Skip(turn.TraceSentCount).ToList();
+        turn.TraceSentCount = turn.Trace.Count;
+        return steps;
     }
 
     private Dictionary<string, object?> BuildToolArguments(
@@ -399,7 +504,7 @@ public class AiAssistantService : IAiAssistantService
         {
             Type = type,
             Target = target?.GetString(),
-            Data = dataProperty
+            Data = dataProperty.Clone()
         };
     }
 

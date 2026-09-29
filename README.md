@@ -78,6 +78,7 @@ flowchart LR
    - **Speech-to-Text (STT)** powered by the browser Web Speech API (`tr-TR`), supporting continuous hands-free voice dictation.
    - Multi-turn conversation history with DeepSeek AI.
    - **MCP Tool-Calling Execution Loop**: As the user speaks or types (*e.g., "Set the student name to Ahmet and birth date to 2005-04-12"*), the backend invokes MCP tools and dispatches `fill_fields` actions; the client writes the values into the inputs on screen through the DOM, so the page's own `onChange` and validation run.
+   - **Real action feedback (client-side tool execution)**: screen tools (`fill_fields`, `navigate_to_page`, `highlight_element`) don't return "success" immediately. The server pauses the turn (`status: "awaiting_client"`), the client applies the actions on the real screen and posts the actual outcome per tool call (`applied` / `partial` / `failed`, e.g. which fields were not found) plus a fresh screen snapshot to `POST /api/assistant/chat/continue`. Only then does the model write its answer, so it never claims an action that didn't happen. Pending turns live in memory for 5 minutes (`IPendingTurnStore`; use a distributed store with multiple instances).
    - **Navigation Action**: The AI can programmatically redirect users (*e.g., "Take me to the teacher page"* triggers client-side navigation to `/teacher`).
 
 5. **Model Context Protocol (MCP) Server**:

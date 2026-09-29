@@ -1,5 +1,5 @@
 import type { AiAction } from '../../services/assistantApi'
-import type { AiActionHandler } from './types'
+import type { ActionOutcome, AiActionHandler } from './types'
 
 interface ActionHandlerRegistryOptions {
   fillFieldsHandler: AiActionHandler
@@ -7,10 +7,8 @@ interface ActionHandlerRegistryOptions {
   highlightHandler: AiActionHandler
 }
 
-export interface ActionHandleResult {
+export interface ActionHandleResult extends ActionOutcome {
   action: AiAction
-  status: 'applied' | 'unhandled' | 'failed'
-  error?: string
 }
 
 export function createActionHandlerRegistry({
@@ -25,18 +23,17 @@ export function createActionHandlerRegistry({
   }
 
   return {
-    // Hiçbir zaman throw etmez: bilinmeyen/hatalı aksiyon botun cevabını düşürmemeli.
-    handle(action: AiAction): ActionHandleResult {
+    // Hiçbir zaman throw etmez: bilinmeyen/hatalı aksiyon da bir sonuç olarak modele döner.
+    async handle(action: AiAction): Promise<ActionHandleResult> {
       const handler = handlers[action.type]
 
       if (!handler) {
         console.warn(`No handler found for action type: ${action.type}`)
-        return { action, status: 'unhandled' }
+        return { action, status: 'failed', error: `İstemcide '${action.type}' aksiyonu desteklenmiyor.` }
       }
 
       try {
-        handler(action)
-        return { action, status: 'applied' }
+        return { action, ...(await handler(action)) }
       } catch (error) {
         console.error('Action handler error:', error)
         return {

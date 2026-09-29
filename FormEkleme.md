@@ -132,6 +132,7 @@ keywords: ders, kurs, ekle, ekleme, ders kodu, nasıl
 2. Logda `Uygulama kataloğu üretildi: N sayfa, M form` satırını ve doğrulama hatası olmadığını kontrol et.
 3. Asistana "Ders ekleme formunda hangi alanlar var?" diye sor; trace panelindeki `get_page_schema` sonucunda alanların Swagger'dan geldiğini gör.
 4. Asistana sor, cevapların altındaki 🔍 trace panelinden tool'lara bak:
+   (Ekran aksiyonlarının gerçek sonucu trace'te **İSTEMCİ** adımı olarak görünür: `applied`, `partial` veya `failed`; `partial`/`failed` ise hangi alanın bulunamadığı veya yazılamadığı yazar.)
    - "Ders eklemem lazım, nasıl yapılır?" → `search_app_knowledge` → `navigate_to_page` → `highlight_element`
    - (Ana sayfadayken) "Matematik dersi, kodu MAT101, forma yaz" → `navigate_to_page` + `fill_fields`
    - "Ders kodunun bir kuralı var mı?" → `get_page_schema`

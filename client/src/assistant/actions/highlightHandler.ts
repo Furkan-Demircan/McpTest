@@ -1,5 +1,5 @@
 import type { AiAction } from '../../services/assistantApi'
-import type { AiActionHandler } from './types'
+import type { AiActionHandler, ActionOutcome } from './types'
 import { waitForElement } from './waitForElement'
 
 const HIGHLIGHT_CLASS = 'assistant-highlight'
@@ -12,24 +12,23 @@ let clearActiveHighlight: (() => void) | null = null
  * Ekrandaki bir elemanı kullanıcıya işaretler (navigasyon sonrası elemanı bekler).
  */
 export function createHighlightHandler(): AiActionHandler {
-  return (action: AiAction) => {
+  return async (action: AiAction): Promise<ActionOutcome> => {
     const elementId = action.data.elementId
 
     if (typeof elementId !== 'string' || !elementId) {
-      throw new Error(`Invalid highlight elementId '${elementId}'`)
+      return { status: 'failed', error: `Geçersiz elementId: '${String(elementId)}'` }
     }
 
     const message =
       typeof action.data.message === 'string' ? action.data.message : undefined
 
-    waitForElement(elementId).then((element) => {
-      if (!element) {
-        console.warn(`Highlight element not found: #${elementId}`)
-        return
-      }
+    const element = await waitForElement(elementId)
+    if (!element) {
+      return { status: 'failed', error: `Eleman ekranda bulunamadı: ${elementId}` }
+    }
 
-      showHighlight(element, message)
-    })
+    showHighlight(element, message)
+    return { status: 'applied' }
   }
 }
 

@@ -16,10 +16,20 @@ export interface AiAction {
   type: string
   target?: string
   data: Record<string, unknown>
+  // İstemci aksiyonun sonucunu bu tool çağrısına ait olarak geri bildirir
+  toolCallId?: string
+}
+
+/** Uygulanan bir aksiyonun sunucuya bildirilen gerçek sonucu */
+export interface AiActionResult {
+  toolCallId: string
+  status: 'applied' | 'partial' | 'failed'
+  detail?: Record<string, unknown>
+  error?: string
 }
 
 export interface AiTraceStep {
-  kind: 'llm' | 'tool' | 'limit'
+  kind: 'llm' | 'tool' | 'client' | 'limit'
   iteration: number
   name?: string
   arguments?: string
@@ -28,29 +38,46 @@ export interface AiTraceStep {
   durationMs: number
 }
 
-interface AiChatResponse {
+export interface AiChatResponse {
+  // awaiting_client: actions uygulanıp sonuçları continueAssistant ile gönderilmeli
+  status: 'completed' | 'awaiting_client'
+  continuationId?: string
   message: string
   missingFields: string[]
   actions: AiAction[]
   trace: AiTraceStep[]
 }
 
-export async function sendAssistantMessage(
-  request: AiChatRequest
-): Promise<AiChatResponse> {
-  const response = await fetch('/api/assistant/chat', {
+async function postAssistant(path: string, body: unknown): Promise<AiChatResponse> {
+  const response = await fetch(`/api/assistant/${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(request),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
-    // GlobalExceptionMiddleware { message } döner; varsa onu göster
-    const body = await response.json().catch(() => null)
-    throw new Error(body?.message ?? 'Asistan mesajı gönderilemedi.')
+    // GlobalExceptionMiddleware / 410 { message } döner; varsa onu göster
+    const error = await response.json().catch(() => null)
+    throw new Error(error?.message ?? 'Asistan mesajı gönderilemedi.')
   }
 
   return response.json()
+}
+
+export function sendAssistantMessage(request: AiChatRequest): Promise<AiChatResponse> {
+  return postAssistant('chat', request)
+}
+
+/**
+ * awaiting_client cevabındaki aksiyonların gerçek sonuçlarını ve aksiyonlardan
+ * sonraki ekran özetini gönderir; sunucu turu bu sonuçlarla sürdürür.
+ */
+export function continueAssistant(
+  continuationId: string,
+  results: AiActionResult[],
+  screen: ScreenSnapshot
+): Promise<AiChatResponse> {
+  return postAssistant('chat/continue', { continuationId, results, screen })
 }

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import './AssistantWidget.css'
 import {
+  continueAssistant,
   sendAssistantMessage,
+  type AiActionResult,
   type AiTraceStep,
   type ChatMessage,
 } from '../services/assistantApi'
@@ -15,7 +17,6 @@ import {
 import { createNavigationHandler } from '../assistant/actions/navigationHandler'
 import { createHighlightHandler } from '../assistant/actions/highlightHandler'
 import { createFillFieldsHandler } from '../assistant/actions/fillFieldsHandler'
-import { waitForNavigation } from '../assistant/actions/waitForElement'
 import { AssistantTrace } from './AssistantTrace'
 import { captureScreenSnapshot } from '../assistant/screenSnapshot'
 
@@ -88,6 +89,11 @@ const combineTexts = (
   const parts = [base.trim(), finalTranscript.trim(), interim.trim()].filter(Boolean)
   return parts.join(' ')
 }
+
+// Tek bir kullanıcı mesajında istemcinin uygulayacağı en fazla aksiyon turu. Sunucunun
+// tur limitiyle (AiAssistantService.MaxIterations = 8) aynı; her aksiyon turu en az bir LLM
+// turu harcadığı için normalde önce sunucu durur. Bu sadece istemci tarafı güvenlik ağı.
+const MAX_CLIENT_ROUNDS = 8
 
 let messageCounter = 1
 
@@ -345,19 +351,39 @@ export const AssistantWidget: React.FC = () => {
       }))
 
     // Tüm conversation history'yi ve kullanıcının o an gördüğü ekranın özetini gönder
-    const response = await sendAssistantMessage({
+    let response = await sendAssistantMessage({
       messages: chatMessages,
       currentPage: location.pathname,
       screen: captureScreenSnapshot(),
     })
 
-    // Aksiyonlar sırayla: navigasyondan sonraki aksiyonlar yeni sayfanın render olmasını bekler
+    const trace = [...(response.trace ?? [])]
     const actionResults: ActionHandleResult[] = []
-    for (const action of response.actions ?? []) {
-      actionResults.push(actionHandlerRegistry.handle(action))
-      if (action.type === 'navigation' && typeof action.data.path === 'string') {
-        await waitForNavigation(action.data.path)
+
+    // Sunucu ekran aksiyonlarının gerçek sonucunu bekliyorsa: aksiyonları sırayla uygula
+    // (navigasyon yeni sayfa render olana kadar bekler), sonuçları ve güncel ekranı gönder.
+    // Model cevabını ancak bu sonuçları gördükten sonra yazar.
+    for (let round = 0; response.status === 'awaiting_client' && response.continuationId; round++) {
+      if (round >= MAX_CLIENT_ROUNDS) {
+        throw new Error('Asistan çok fazla adım istedi; işlem durduruldu.')
       }
+
+      const results: AiActionResult[] = []
+      for (const action of response.actions ?? []) {
+        const result = await actionHandlerRegistry.handle(action)
+        actionResults.push(result)
+        if (action.toolCallId) {
+          results.push({
+            toolCallId: action.toolCallId,
+            status: result.status,
+            detail: result.detail,
+            error: result.error,
+          })
+        }
+      }
+
+      response = await continueAssistant(response.continuationId, results, captureScreenSnapshot())
+      trace.push(...(response.trace ?? []))
     }
 
     const botMessage: Message = {
@@ -365,7 +391,7 @@ export const AssistantWidget: React.FC = () => {
       sender: 'bot',
       text: response.message,
       time: getCurrentTimeString(),
-      trace: response.trace,
+      trace,
       actionResults,
     }
 

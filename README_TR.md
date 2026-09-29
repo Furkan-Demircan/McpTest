@@ -77,6 +77,7 @@ flowchart LR
 4. **Sağ Altta Sabit Akıllı Asistan & Sesli Dikte**:
    - **Sesle Yazma (Speech-to-Text):** Tarayıcının Web Speech API altyapısını kullanarak Türkçe (`tr-TR`) sesli dikte desteği. Duraksamalarda dinlemeyi sürdürür ve konuşmayı metne çevirir.
    - **MCP Araç Çağırma (Tool Calling) Döngüsü:** Kullanıcı *"Öğrencinin adını Ahmet, soyadını Kaya, doğum tarihini 2004-06-18 yap"* dediğinde, DeepSeek AI backend üzerinden MCP sunucusundaki `fill_fields` aracını çağırır. Dönen `fill_fields` aksiyonu değerleri istemcide DOM üzerinden ekrandaki input'lara yazar; sayfanın kendi `onChange`'i ve validasyonu çalışır.
+   - **Gerçek aksiyon geri bildirimi (istemci tarafında tool çalıştırma):** Ekran tool'ları (`fill_fields`, `navigate_to_page`, `highlight_element`) hemen "başarılı" dönmez. Sunucu turu bekletir (`status: "awaiting_client"`); istemci aksiyonları gerçek ekranda uygular, her tool çağrısının gerçek sonucunu (`applied` / `partial` / `failed`, örn. hangi alanların bulunamadığı) ve güncel ekran özetini `POST /api/assistant/chat/continue` ile gönderir. Model cevabını ancak bundan sonra yazar; yapılmamış bir işlemi yaptım demez. Bekleyen turlar 5 dakika bellekte tutulur (`IPendingTurnStore`; birden fazla sunucu örneğinde dağıtık depo kullanılmalı).
    - **Sayfa Yönlendirme (Navigation Action):** Kullanıcı *"Beni öğretmen ekleme sayfasına götür"* dediğinde, asistan `navigate_to_page` aracı ile kullanıcıyı istemci tarafında `/teacher` sayfasına yönlendirir.
 
 5. **Model Context Protocol (MCP) Sunucusu**:
