@@ -22,17 +22,25 @@ export function createFillFieldsHandler(): AiActionHandler {
     const written: string[] = []
     const notFound: string[] = []
     const notWritable: string[] = []
+    // Bileşenin yazmayı reddetme nedeni (örn. "seçeneklerde yok", "tarih aralık dışında")
+    const reasons: Record<string, string> = {}
     const invalid: { field: string; message: string }[] = []
 
     for (const [reference, value] of Object.entries(values as Record<string, unknown>)) {
       const element = await waitForElement(reference)
 
       if (!element) notFound.push(reference)
-      else if (writeValue(element, value)) {
-        written.push(reference)
-        const problem = constraintProblem(element)
-        if (problem) invalid.push({ field: reference, message: problem })
-      } else notWritable.push(reference)
+      else {
+        const result = writeValue(element, value)
+        if (result.ok) {
+          written.push(reference)
+          const problem = constraintProblem(element)
+          if (problem) invalid.push({ field: reference, message: problem })
+        } else {
+          notWritable.push(reference)
+          reasons[reference] = result.reason
+        }
+      }
     }
 
     const status = notFound.length + notWritable.length + invalid.length === 0
@@ -41,7 +49,7 @@ export function createFillFieldsHandler(): AiActionHandler {
         ? 'partial'
         : 'failed'
 
-    return { status, detail: { written, notFound, notWritable, invalid } }
+    return { status, detail: { written, notFound, notWritable, reasons, invalid } }
   }
 }
 

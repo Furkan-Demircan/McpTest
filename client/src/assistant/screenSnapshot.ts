@@ -1,4 +1,5 @@
 import { aiReference } from './dom/findAiElement'
+import { aiFieldRegistry } from '../ui/ai/useAiField'
 
 export interface ScreenElement {
   id: string
@@ -10,6 +11,8 @@ export interface ScreenElement {
   // Sayfanın HTML'de ilan ettiği aralık (örn. tarih seçicinin min/max'ı)
   min?: string
   max?: string
+  // Seçimli alanlarda geçerli seçenekler (etiketler)
+  options?: string[]
   required?: boolean
   disabled?: boolean
 }
@@ -27,6 +30,7 @@ const ASSISTANT_ROOT_SELECTOR = '.assistant-container'
 const MAX_ELEMENTS = 80
 const MAX_LABEL_LENGTH = 80
 const MAX_VALUE_LENGTH = 100
+const MAX_OPTIONS = 30
 
 /**
  * Kullanıcının o an gördüğü etkileşimli elemanların özeti (DOM'dan). Asistan bulunulan
@@ -41,6 +45,27 @@ export function captureScreenSnapshot(root: ParentNode = document): ScreenSnapsh
     if (elements.length >= MAX_ELEMENTS) break
     if (seen.has(element) || element.closest(ASSISTANT_ROOT_SELECTOR) || !isVisible(element)) continue
     seen.add(element)
+
+    // Ortak form bileşeni (useAiField ile kayıtlı): bilgi DOM tahmini yerine bileşenden gelir,
+    // bileşenin içindeki (MUI'nin gizli/yardımcı) input'lar ayrıca listelenmez.
+    const registered = element.dataset.aiField ? aiFieldRegistry.get(element.dataset.aiField) : undefined
+    if (registered) {
+      element.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR).forEach((inner) => seen.add(inner))
+      const value = registered.getValue()
+      const options = registered.options?.().map((option) => option.label) ?? []
+      elements.push({
+        id: element.id,
+        kind: registered.kind,
+        label: registered.label,
+        field: element.dataset.aiField,
+        ...(value ? { value: truncate(value) } : {}),
+        ...(registered.required ? { required: true } : {}),
+        ...(registered.min ? { min: registered.min } : {}),
+        ...(registered.max ? { max: registered.max } : {}),
+        ...(options.length ? { options: options.slice(0, MAX_OPTIONS) } : {}),
+      })
+      continue
+    }
 
     const snapshot: ScreenElement = {
       id: element.id,
@@ -80,8 +105,11 @@ function readValue(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaE
     if (element.type === 'checkbox' || element.type === 'radio') return element.checked ? 'seçili' : undefined
   }
 
-  const value = element.value.trim()
-  return value.length > MAX_VALUE_LENGTH ? `${value.slice(0, MAX_VALUE_LENGTH)}…` : value || undefined
+  return truncate(element.value.trim()) || undefined
+}
+
+function truncate(value: string): string {
+  return value.length > MAX_VALUE_LENGTH ? `${value.slice(0, MAX_VALUE_LENGTH)}…` : value
 }
 
 function getKind(element: HTMLElement): ScreenElement['kind'] {

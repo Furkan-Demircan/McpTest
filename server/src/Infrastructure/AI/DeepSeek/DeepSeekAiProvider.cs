@@ -37,6 +37,7 @@ public class DeepSeekAiProvider : IAiProvider
             if (element.Required == true) states.Add("zorunlu");
             if (isInput) states.Add(string.IsNullOrEmpty(element.Value) ? "boş" : $"değer: \"{element.Value}\"");
             if (element.Min is not null || element.Max is not null) states.Add($"izin verilen aralık: {element.Min ?? "…"} – {element.Max ?? "…"}");
+            if (element.Options is { Count: > 0 } options) states.Add($"seçenekler: {string.Join(" | ", options)}");
             if (element.Disabled == true) states.Add("pasif");
 
             // fill_fields / highlight_element bu referansı kullanır (data-ai-field → name → id)
@@ -136,6 +137,9 @@ public class DeepSeekAiProvider : IAiProvider
                 - Alanda zaten aynı değer varsa tekrar yazma; yalnızca yeni ve değişen bilgileri ilet.
                 - Ekran özetinde bir alanın izin verilen aralığı varsa (örn. doğum tarihi) aralık dışındaki
                   bir değeri YAZMA; kullanıcıya değerin kabul edilmeyeceğini söyle ve doğrusunu iste.
+                - Seçimli bir alanın seçenekleri ekran özetinde varsa sadece o seçeneklerden birini yaz
+                  (kullanıcının dediğine en yakın olanı); listede karşılığı yoksa uydurma, kullanıcıya seçenekleri söyle.
+                - fill_fields sonucunda detail.reasons varsa alan o nedenle yazılamadı; nedeni kullanıcıya ilet.
                 - fill_fields sonucunda detail.invalid varsa değer yazıldı ama sayfa onu kabul etmiyor:
                   mesajı kullanıcıya ilet ve doğru değeri iste; kaydedilebilir gibi anlatma.
 

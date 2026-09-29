@@ -26,6 +26,9 @@ public class ScreenElement
     // Sayfanın HTML'de ilan ettiği aralık (min/max); dışındaki değer sayfa tarafından reddedilir
     public string? Min { get; set; }
     public string? Max { get; set; }
+
+    // Seçimli alanlarda geçerli seçenekler (bileşenin kendisinden; asistan uydurmak yerine bunlardan seçer)
+    public List<string>? Options { get; set; }
     public bool? Required { get; set; }
     public bool? Disabled { get; set; }
 }
