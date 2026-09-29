@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type UserResponse } from '../services/api'
+import { birthDateBounds, birthDateError } from '../utils/birthDate'
 import './FormPage.css'
 
 const initialFormData = {
@@ -13,6 +14,10 @@ const initialFormData = {
   fatherName: '',
   birthDate: '',
 }
+
+// Makul yaş aralığı (backend ile aynı; asıl doğrulama sunucuda)
+const MIN_AGE = 18
+const MAX_AGE = 70
 
 interface FormErrors {
   [key: string]: string
@@ -117,6 +122,9 @@ function TeacherFormPage() {
 
     if (!birthDate) {
       newErrors.birthDate = 'Doğum tarihi seçimi zorunludur.'
+    } else {
+      const birthDateProblem = birthDateError(birthDate, MIN_AGE, MAX_AGE, 'Öğretmen')
+      if (birthDateProblem) newErrors.birthDate = birthDateProblem
     }
 
     setErrors(newErrors)
@@ -441,6 +449,8 @@ function TeacherFormPage() {
                 id="teacherBirthDate"
                 type="date"
                 name="birthDate"
+                min={birthDateBounds(MIN_AGE, MAX_AGE).min}
+                max={birthDateBounds(MIN_AGE, MAX_AGE).max}
                 value={formData.birthDate || ''}
                 onChange={handleChange}
                 disabled={isLoading}

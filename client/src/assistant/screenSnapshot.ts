@@ -7,6 +7,9 @@ export interface ScreenElement {
   field?: string
   name?: string
   value?: string
+  // Sayfanın HTML'de ilan ettiği aralık (örn. tarih seçicinin min/max'ı)
+  min?: string
+  max?: string
   required?: boolean
   disabled?: boolean
 }
@@ -56,6 +59,8 @@ export function captureScreenSnapshot(root: ParentNode = document): ScreenSnapsh
       const value = readValue(element)
       if (value) snapshot.value = value
       if (isRequired(element)) snapshot.required = true
+      if (element.getAttribute('min')) snapshot.min = element.getAttribute('min')!
+      if (element.getAttribute('max')) snapshot.max = element.getAttribute('max')!
     }
 
     if ((element as HTMLButtonElement).disabled) snapshot.disabled = true

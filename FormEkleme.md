@@ -40,6 +40,7 @@ Sayfa, route ve backend endpoint'i her zamanki gibi yazılır. Asistan açısın
 - `name` farklıysa (örneğin `name="course_title"`) sadece o input'a işaret ekle: `data-ai-field="courseName"`.
 - **`<label for>`** (ya da input'u saran `<label>`) etiketin kaynağıdır. Asistan kullanıcıyla ekrandaki etiketlerle konuşur.
 - Zorunlu alanlar için `required` attribute'u ya da etikette `required-star` sınıfı, ekran özetinde "zorunlu" olarak görünür.
+- **HTML kısıtları asistanın da kısıtıdır:** input'a `min`/`max` (örn. doğum tarihi için makul yaş aralığı), `maxLength`, `pattern` koyarsan asistan bunları ekran özetinde görür ve aralık dışı bir değeri yazmadan önce kullanıcıyı uyarır. Yazdığı değer yine de kısıta uymazsa tarayıcının doğrulama mesajı sonuçta `invalid` olarak modele döner. Kısıtın asıl sahibi yine backend'dir (DTO validasyonu); HTML kısıtı erken geri bildirim içindir.
 - `id`'ler farklı sayfalarda farklı olabilir (öğretmen formunda `id="teacherFirstName"`, `name="firstName"`). Eşleme `name` üzerinden yürür.
 
 ## 2. Katalog kaydı ekle

@@ -13,5 +13,6 @@ Yeni öğretmen, Öğretmen Ekleme Formu üzerinden kaydedilir.
 4. [@teacherSubmit] butonuna basın.
 
 ## Bilinmesi gerekenler
+- Öğretmenin yaşı 18 ile 70 arasında olmalıdır; bu aralık dışındaki doğum tarihleri kabul edilmez.
 - Branş bilgisi şu an yalnızca onay ekranında gösterilir; veritabanına kaydedilmez ve kayıt listesinde görünmez. Branşın kayıtlı kalması gerekiyorsa ayrıca not alın.
 - Öğretmen ve öğrenci kayıtları aynı kullanıcı tablosunda tutulur: bir öğrencinin TC'si veya e-postası ile öğretmen kaydı açılamaz (ve tersi).

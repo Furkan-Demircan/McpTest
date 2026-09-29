@@ -91,10 +91,15 @@ public class User
         FatherName = fatherName.Trim();
     }
 
+    // Rolden bağımsız genel akıl kontrolü; öğrenci/öğretmen yaş aralığı DTO validasyonundadır.
+    private static readonly DateOnly EarliestBirthDate = new(1900, 1, 1);
+
     public void SetBirthDate(DateOnly birthDate)
     {
         if (birthDate > DateOnly.FromDateTime(DateTime.UtcNow))
             throw new DomainException("Doğum tarihi gelecekte bir tarih olamaz.");
+        if (birthDate < EarliestBirthDate)
+            throw new DomainException("Doğum tarihi geçerli değil (1900'den önce olamaz).");
         BirthDate = birthDate;
     }
 

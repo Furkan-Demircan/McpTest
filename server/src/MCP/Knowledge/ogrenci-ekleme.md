@@ -14,7 +14,7 @@ Yeni öğrenci, Öğrenci Ekleme Formu üzerinden kaydedilir.
 
 ## Bilinmesi gerekenler
 - "TC Kimlik Numarası" [@tcNo] alanı sadece rakam kabul eder ve 11 hanede durur.
-- "Doğum Tarihi" [@birthDate] takvimden seçilir.
+- "Doğum Tarihi" [@birthDate] takvimden seçilir. Öğrencinin yaşı 5 ile 25 arasında olmalıdır; bu aralık dışındaki tarihler (örn. 1930 veya yazım hatasıyla 1002) kabul edilmez.
 - Aynı TC Kimlik Numarası veya aynı e-posta ile ikinci bir kayıt açılamaz; öğretmen kayıtları da bu kurala dahildir.
 - Emin değilseniz önce Kayıtlı Kullanıcılar sayfasında TC No ile arayıp kişinin daha önce kaydedilip kaydedilmediğini kontrol edin.
 - [@studentReset] tüm alanları sıfırlar; geri alınamaz.

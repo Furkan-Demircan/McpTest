@@ -22,6 +22,10 @@ public class ScreenElement
 
     // Kısaltılmış mevcut değer; şifre alanlarında hiç gönderilmez
     public string? Value { get; set; }
+
+    // Sayfanın HTML'de ilan ettiği aralık (min/max); dışındaki değer sayfa tarafından reddedilir
+    public string? Min { get; set; }
+    public string? Max { get; set; }
     public bool? Required { get; set; }
     public bool? Disabled { get; set; }
 }

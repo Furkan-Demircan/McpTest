@@ -7,7 +7,7 @@ keywords: hata, hatası, kaydedilmiyor, kaydolmuyor, olmuyor, uyarı, kırmızı
 Form kaydedilmiyorsa hatanın nerede göründüğüne bakın.
 
 ## Alanın altında kırmızı uyarı
-Alan boş bırakılmış veya kurala uymuyor (örn. TC No 11 hane değil). Uyarıdaki mesaj neyin eksik olduğunu söyler; ilgili alanı düzeltip tekrar kaydedin. Alanların kuralları için sayfa şemasına bakılabilir.
+Alan boş bırakılmış veya kurala uymuyor (örn. TC No 11 hane değil, ya da doğum tarihi makul yaş aralığında değil: öğrenci 5–25, öğretmen 18–70 yaş). Uyarıdaki mesaj neyin eksik olduğunu söyler; ilgili alanı düzeltip tekrar kaydedin. Alanların kuralları için sayfa şemasına bakılabilir.
 
 ## Sayfanın üstünde kırmızı bant (sunucu hatası)
 - "... TC Kimlik Numarası ile kayıtlı bir kullanıcı zaten mevcut": Kişi daha önce kaydedilmiş. Kayıtlı Kullanıcılar sayfasında [@usersSearch] ile TC No'yu arayarak kontrol edin; tekrar kaydetmeyin.
