@@ -100,6 +100,8 @@ Sunucu `endpoint`'in request body şemasını uygulamanın kendi Swagger doküma
 | `DateOnly` / `DateTime` | tarih |
 | Kalıtım (`record CreateTeacherDto : CreateUserDto`) | Temel sınıfın alanları dahil |
 
+Yeni bir entity eklediysen (örn. `Course`) demoda tablosu açılışta kendiliğinden oluşturulur ([DatabaseInitializer.cs](server/src/Infrastructure/Persistence/DatabaseInitializer.cs): var olan veritabanına sadece eksik tabloları ekler, mevcut tablolara dokunmaz). Gerçek sistemde bunun yerine EF migration kullanılmalıdır.
+
 Swagger'da olmayan ya da JSON body'si olmayan bir endpoint açılışta API loguna `Katalog doğrulaması` hatası olarak düşer.
 
 ## 4. Süreç rehberi (önerilir)

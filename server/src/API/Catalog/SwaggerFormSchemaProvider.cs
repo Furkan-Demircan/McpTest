@@ -73,13 +73,20 @@ public sealed class SwaggerFormSchemaProvider(ISwaggerProvider swaggerProvider)
         if (format == "email")
             rules.Add(new FieldRule { Kind = "email" });
 
+        if (GetInt(schema, "minimum") is { } minimum)
+            rules.Add(new FieldRule { Kind = "minimum", Value = minimum });
+
+        if (GetInt(schema, "maximum") is { } maximum)
+            rules.Add(new FieldRule { Kind = "maximum", Value = maximum });
+
         return new FieldDefinition
         {
             Name = name,
-            Type = format switch
+            Type = (GetString(schema, "type"), format) switch
             {
-                "email" => "email",
-                "date" or "date-time" => "date",
+                (_, "email") => "email",
+                (_, "date" or "date-time") => "date",
+                ("integer" or "number", _) => "number",
                 _ => "text"
             },
             ElementId = name,
@@ -145,7 +152,8 @@ public sealed class SwaggerFormSchemaProvider(ISwaggerProvider swaggerProvider)
             : null;
 
     private static int? GetInt(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
-            ? value.GetInt32()
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number &&
+        value.TryGetInt32(out var number)
+            ? number
             : null;
 }

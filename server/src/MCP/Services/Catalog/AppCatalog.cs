@@ -62,7 +62,7 @@ public class FieldDefinition
 
 public class FieldRule
 {
-    // "minLength" | "maxLength" | "pattern" | "email"
+    // "minLength" | "maxLength" | "pattern" | "email" | "minimum" | "maximum"
     public string Kind { get; set; } = string.Empty;
     public int? Value { get; set; }
     public string? Pattern { get; set; }

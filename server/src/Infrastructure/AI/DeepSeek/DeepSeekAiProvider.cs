@@ -161,7 +161,7 @@ public class DeepSeekAiProvider : IAiProvider
                 Ekran özeti — kullanıcının şu an gördüğü etkileşimli elemanlar
                 (format: referans [tür] "etiket" — durum/değer):
                 {(request.ScreenAfterClientActions
-                    ? "(Bu özet senin az önceki ekran aksiyonlarından SONRA alındı; alanlardaki değerlerin bir kısmını sen yazdın, önceden var olduklarını düşünme.)"
+                    ? "(Bu özet senin az önceki ekran aksiyonlarından SONRA alındı: alanlardaki değerlerin bir kısmını sen yazdın, önceden var olduklarını düşünme; sayfayı sen değiştirdiysen kullanıcı oraya kendisi gelmedi, onu sen götürdün.)"
                     : "(Bu özet kullanıcının mesajı gönderdiği andaki ekrandır.)")}
                 {FormatScreen(request.Screen)}
                 """

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import FormPage from './pages/FormPage'
 import TeacherFormPage from './pages/TeacherFormPage'
+import CourseFormPage from './pages/CourseFormPage'
 import UsersListPage from './pages/UsersListPage'
 import AssistantWidget from './components/AssistantWidget'
 import './App.css'
@@ -28,6 +29,10 @@ function App() {
         <Route path="/teacher-form" element={<TeacherFormPage />} />
         <Route path="/ogretmen" element={<TeacherFormPage />} />
         <Route path="/ogretmen-ekle" element={<TeacherFormPage />} />
+
+        {/* Ders Ekleme Formu */}
+        <Route path="/course" element={<CourseFormPage />} />
+        <Route path="/ders-ekle" element={<Navigate to="/course" replace />} />
 
         {/* Kayıtlar Listesi */}
         <Route path="/users" element={<UsersListPage />} />

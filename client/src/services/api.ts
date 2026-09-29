@@ -28,6 +28,22 @@ export interface TeacherResponse extends UserResponse {
   branch: string
 }
 
+export interface CreateCoursePayload {
+  courseName: string
+  courseCode: string
+  credits: number
+  description: string | null
+}
+
+export interface CourseResponse {
+  id: string
+  courseName: string
+  courseCode: string
+  credits: number
+  description: string | null
+  createdAt: string
+}
+
 export interface ApiError {
   statusCode: number
   message: string
@@ -77,6 +93,13 @@ export const api = {
    */
   async createTeacher(payload: CreateTeacherPayload): Promise<TeacherResponse> {
     return postJson('/users/teachers', payload, 'Öğretmen kaydedilirken bir hata oluştu.')
+  },
+
+  /**
+   * Yeni ders ekler (POST /api/courses)
+   */
+  async createCourse(payload: CreateCoursePayload): Promise<CourseResponse> {
+    return postJson('/courses', payload, 'Ders kaydedilirken bir hata oluştu.')
   },
 
   /**

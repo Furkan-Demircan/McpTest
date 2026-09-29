@@ -29,6 +29,10 @@ export const HomePage: React.FC = () => {
             <span>👩‍🏫 Öğretmen Ekle</span>
             <span className="btn-arrow">→</span>
           </Link>
+          <Link id="homeCourseLink" to="/course" className="btn-go-to-form">
+            <span>📚 Ders Ekle</span>
+            <span className="btn-arrow">→</span>
+          </Link>
           <Link id="homeUsersLink" to="/users" className="btn-go-to-list">
             <span>📋 Kayıtlı Kullanıcıları Gör</span>
           </Link>

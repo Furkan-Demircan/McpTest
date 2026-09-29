@@ -87,9 +87,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        logger.LogInformation("Veritabanı bağlantısı kontrol ediliyor ve tablolar oluşturuluyor...");
-        context.Database.EnsureCreated();
-        logger.LogInformation("Veritabanı ve tablolar başarıyla hazırlandı.");
+        logger.LogInformation("Veritabanı bağlantısı kontrol ediliyor ve şema hazırlanıyor...");
+        DatabaseInitializer.EnsureSchema(context, logger);
     }
     catch (Exception ex)
     {

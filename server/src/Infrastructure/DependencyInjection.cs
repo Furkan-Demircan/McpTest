@@ -22,6 +22,7 @@ public static class DependencyInjection
                 b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ICourseRepository, CourseRepository>();
 
         // İstemci aksiyonlarını bekleyen sohbet turları (tek sunucu örneği için bellekte)
         services.AddSingleton<IPendingTurnStore, InMemoryPendingTurnStore>();

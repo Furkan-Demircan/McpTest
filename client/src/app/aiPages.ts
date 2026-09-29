@@ -43,6 +43,7 @@ export const aiPages: AiPage[] = [
     elements: [
       { id: 'homeStudentLink', label: 'Öğrenci Ekle', kind: 'link' },
       { id: 'homeTeacherLink', label: 'Öğretmen Ekle', kind: 'link' },
+      { id: 'homeCourseLink', label: 'Ders Ekle', kind: 'link' },
       { id: 'homeUsersLink', label: 'Kayıtlı Kullanıcıları Gör', kind: 'link' },
     ],
   },
@@ -70,6 +71,19 @@ export const aiPages: AiPage[] = [
     elements: [
       { id: 'teacherSubmit', label: 'Öğretmeni Kaydet', kind: 'button' },
       { id: 'teacherReset', label: 'Temizle', kind: 'button' },
+    ],
+  },
+  {
+    id: 'course-create',
+    path: '/course',
+    aliases: ['/ders-ekle'],
+    title: 'Ders Ekleme Formu',
+    description: 'Yeni ders kaydı oluşturulur (ders adı, ders kodu, kredi, açıklama).',
+    module: 'Akademik',
+    endpoint: 'POST /api/courses',
+    elements: [
+      { id: 'courseSubmit', label: 'Dersi Kaydet', kind: 'button' },
+      { id: 'courseReset', label: 'Temizle', kind: 'button' },
     ],
   },
   {
