@@ -535,6 +535,7 @@ export const AssistantWidget: React.FC = () => {
 
                 {msg.choices && msg.choices.length > 0 && (
                   <div className="chat-choices">
+                    <span className="chat-choices-title">Seçmek için tıklayın</span>
                     {msg.choices.map((choice) => (
                       <button
                         key={choice.message}

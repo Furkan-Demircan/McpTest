@@ -299,6 +299,11 @@
 }
 
 /* Tıklanabilir kayıt listesi */
+.chat-choices-title {
+  font-size: 11px;
+  color: var(--text);
+}
+
 .chat-choices {
   display: flex;
   flex-direction: column;

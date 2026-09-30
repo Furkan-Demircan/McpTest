@@ -24,6 +24,9 @@ public class PendingTurn
     // İstemciye daha önce gönderilmiş trace adımı sayısı (her cevapta sadece yeniler gider)
     public int TraceSentCount { get; set; }
 
+    // Hatalı taslak cevap (kaynaksız kişisel veri / önceki cevabın tekrarı) bir kez yeniden istendi mi
+    public bool AnswerRetried { get; set; }
+
     // Tüm devam adımları boyunca toplam LLM turu (tur limiti buna uygulanır)
     public int IterationsUsed { get; set; }
 }

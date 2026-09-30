@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 using Application.AI.Contracts;
 
@@ -153,6 +154,34 @@ public class AiAssistantService : IAiAssistantService
 
             if (response.ToolCalls.Count == 0)
             {
+                // Tool sonuçları sohbet geçmişinde tutulmadığı için model kayıt bilgisini "hatırlayarak"
+                // uydurabiliyor. Cevaptaki TC/e-posta hiçbir kaynakta yoksa bir kez tool ile doğrulat.
+                // Ayrıca tool çağırmadan önceki bir cevabı aynen tekrarlıyorsa (örn. aynı liste sorusu) veri eskidir.
+                var correction = FindUngroundedValues(turn.Messages, response.Content) is { Count: > 0 } ungrounded
+                    ? ("kaynaksız kişisel veri", string.Join(", ", ungrounded),
+                       $"Cevap taslağındaki şu değerler hiçbir tool sonucunda veya sohbette yok: {string.Join(", ", ungrounded)}. " +
+                       "Kayıt bilgisini hafızandan yazma: ilgili tool'u (örn. find_student) şimdi çağır ve cevabı yalnızca onun sonucuna dayandır.")
+                    : RepeatsPreviousAnswer(turn.Messages, response.Content)
+                        ? ("önceki cevabın tekrarı", response.Content,
+                           "Önceki bir cevabını aynen tekrarlıyorsun. Tool sonuçları geçmişte saklanmaz ve veriler değişmiş olabilir: " +
+                           "istenen bilgiyi ilgili tool'u şimdi yeniden çağırarak al; tool gerekmiyorsa cevabını yeniden yaz.")
+                        : default((string Name, string? Detail, string Instruction)?);
+
+                if (correction is { } fix && !turn.AnswerRetried)
+                {
+                    turn.AnswerRetried = true;
+                    turn.Trace.Add(new AiTraceStep
+                    {
+                        Kind = "limit",
+                        Iteration = iteration,
+                        Name = $"{fix.Name}, cevap yeniden istendi",
+                        Result = fix.Detail,
+                        IsError = true
+                    });
+                    turn.Messages.Add(new ChatMessage { Role = "system", Content = fix.Instruction });
+                    continue;
+                }
+
                 return new AiChatResponse
                 {
                     Status = AiChatStatus.Completed,
@@ -355,6 +384,52 @@ public class AiAssistantService : IAiAssistantService
             return false;
         }
     }
+
+    private static readonly Regex PersonalValuePattern = new(
+        @"(?<![\d])\d{11}(?![\d])|[\w.+-]+@[\w-]+(?:\.[\w-]+)+",
+        RegexOptions.Compiled);
+
+    /// <summary>
+    /// Cevaptaki kişisel değerlerden (11 haneli TC, e-posta) sohbetin hiçbir mesajında
+    /// (kullanıcı, önceki cevaplar, bu turun tool sonuçları) geçmeyenler.
+    /// </summary>
+    private static List<string> FindUngroundedValues(List<ChatMessage> messages, string? answer)
+    {
+        if (string.IsNullOrWhiteSpace(answer))
+        {
+            return [];
+        }
+
+        // Tool sonuçları JSON'dur; Türkçe karakterler \u kaçışlı olabilir, e-posta/TC için sorun değil
+        var sources = string.Join("\n", messages.Select(message => message.Content)).ToLowerInvariant();
+
+        return PersonalValuePattern.Matches(answer)
+            .Select(match => match.Value.TrimEnd('.'))
+            .Where(value => !sources.Contains(value.ToLowerInvariant(), StringComparison.Ordinal))
+            .Distinct()
+            .ToList();
+    }
+
+    // Bu istekte hiç tool çağrılmadan, geçmişteki bir asistan cevabıyla aynı metin mi üretildi
+    private static bool RepeatsPreviousAnswer(List<ChatMessage> messages, string? answer)
+    {
+        var lastUserIndex = messages.FindLastIndex(message => message.Role == "user");
+        if (string.IsNullOrWhiteSpace(answer) || messages.Skip(lastUserIndex + 1).Any(message => message.Role == "tool"))
+        {
+            return false;
+        }
+
+        var normalized = NormalizeAnswer(answer);
+        return messages
+            .Take(Math.Max(lastUserIndex, 0))
+            .Any(message => message.Role == "assistant" &&
+                            message.ToolCalls.Count == 0 &&
+                            message.Content != null &&
+                            NormalizeAnswer(message.Content) == normalized);
+    }
+
+    private static string NormalizeAnswer(string text) =>
+        string.Concat(text.ToLowerInvariant().Where(char.IsLetterOrDigit));
 
     private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 
