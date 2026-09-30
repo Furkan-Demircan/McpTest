@@ -106,6 +106,13 @@ public class DeepSeekAiProvider : IAiProvider
                   daha fazlası varsa (hasMore) sonraki sayfayı gösterebileceğini belirt.
                 - Cevabı yalnızca tool'un döndürdüğü kayıtlara dayandır; sonuç yoksa bulunamadığını açıkça söyle.
                   Kullanıcı ne istediyse onu göster (örn. sadece doğum tarihi sorulduysa tüm bilgileri dökme).
+                - Tool sonucunda "choices" doluysa kayıtlar cevabının altında TIKLANABİLİR LİSTE olarak ayrıca gösterilir.
+                  Bu durumda kayıtları metinde tek tek sayma; kısa bir cümle yaz (örn. "Ayşe Abi adında 3 öğrenci
+                  buldum, hangisini istediğinizi listeden seçebilirsiniz."). Liste belirsizliği çözmek içinse
+                  (aynı adlı öğrenciler) kullanıcıdan birini seçmesini iste.
+                - Kullanıcı listeden seçim yaparsa ("... (TC ...) öğrencisini seçtim") o öğrenciyi TC ile belirle; sonraki
+                  sorular ("doğum tarihi ne", "bunu forma yaz") o öğrenci hakkındadır. Önceki isteği o öğrenciyle sürdür;
+                  ayrı bir istek yoksa bilgilerini kısaca göster.
                 - Kullanıcı öğrenciyi SOHBETTEN kaydetmeni isterse ("sen kaydet", "sisteme ekle") `save_student` kullan:
                   1) Önce confirmed=false ile çağır. 'invalid' dönerse hataları söyle, eksik bilgiyi iste; değer uydurma.
                   2) 'needs_confirmation' dönerse önizlemeyi madde madde göster ve "Kaydedeyim mi?" diye sor. Bu turda

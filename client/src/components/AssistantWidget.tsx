@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './AssistantWidget.css'
 import {
   continueAssistant,
   sendAssistantMessage,
   type AiActionResult,
+  type AiChoice,
   type AiTraceStep,
   type ChatMessage,
 } from '../services/assistantApi'
@@ -31,6 +34,8 @@ interface Message {
   excludeFromHistory?: boolean
   trace?: AiTraceStep[]
   actionResults?: ActionHandleResult[]
+  // Kayıt listesi (örn. aynı adlı öğrenciler); tıklanınca seçim mesajı gönderilir
+  choices?: AiChoice[]
 }
 
 interface SpeechRecognitionResultItem {
@@ -418,6 +423,7 @@ export const AssistantWidget: React.FC = () => {
       time: getCurrentTimeString(),
       trace,
       actionResults,
+      choices: response.choices,
     }
 
     setMessages((prev) => [
@@ -518,8 +524,31 @@ export const AssistantWidget: React.FC = () => {
                 }`}
               >
                 <div className="bubble-text">
-                  {msg.text}
+                  {msg.sender === 'bot' ? (
+                    <div className="markdown">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.text
+                  )}
                 </div>
+
+                {msg.choices && msg.choices.length > 0 && (
+                  <div className="chat-choices">
+                    {msg.choices.map((choice) => (
+                      <button
+                        key={choice.message}
+                        type="button"
+                        className="choice-btn"
+                        onClick={() => handleSendMessage(choice.message)}
+                        disabled={isTyping}
+                      >
+                        <span className="choice-label">{choice.label}</span>
+                        {choice.detail && <span className="choice-detail">{choice.detail}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {msg.trace && (
                   <AssistantTrace

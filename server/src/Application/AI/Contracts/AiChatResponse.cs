@@ -15,6 +15,9 @@ public class AiChatResponse
 
     public List<AiAction> Actions { get; set; } = [];
 
+    // Cevabın altında tıklanabilir seçenekler (son tool sonucundan)
+    public List<AiChoice> Choices { get; set; } = [];
+
     public List<AiTraceStep> Trace { get; set; } = [];
 }
 

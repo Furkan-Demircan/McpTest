@@ -229,6 +229,119 @@
   align-self: flex-end;
 }
 
+/* Bot mesajındaki markdown */
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0 0 8px;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 20px;
+}
+
+.markdown li + li {
+  margin-top: 2px;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-size: 15px;
+  margin: 10px 0 6px;
+}
+
+.markdown code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--code-bg);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.markdown pre {
+  overflow-x: auto;
+  background: var(--code-bg);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.markdown pre code {
+  padding: 0;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 0 0 8px;
+  display: block;
+  overflow-x: auto;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  text-align: left;
+}
+
+.markdown a {
+  color: var(--accent);
+}
+
+/* Tıklanabilir kayıt listesi */
+.chat-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.choice-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.choice-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.choice-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.choice-detail {
+  font-size: 11px;
+  color: var(--text);
+}
+
 /* Uygulama olayı (kayıt isteği sonucu, sayfa değişimi) */
 .chat-event {
   align-self: center;

@@ -51,6 +51,7 @@ public static class StudentTools
         {
             Found = students.Count > 0,
             Students = students.Select(StudentInfo.From).ToList(),
+            Choices = ToChoices(students),
             Hint = students.Count > 0
                 ? null
                 : "Bu bilgiyle kayıtlı öğrenci bulunamadı. Kullanıcıya açıkça söyle; yazımı kontrol etmesini veya TC ile aramayı öner."
@@ -76,9 +77,21 @@ public static class StudentTools
             Page = result.Page,
             PageSize = result.PageSize,
             HasMore = result.Page * result.PageSize < result.Total,
-            Students = result.Items.Select(StudentInfo.From).ToList()
+            Students = result.Items.Select(StudentInfo.From).ToList(),
+            Choices = ToChoices(result.Items)
         };
     }
+
+    // Birden fazla kayıt dönünce sohbette tıklanabilir liste olarak gösterilir; seçim TC ile kesinleşir
+    private static List<ChoiceItem> ToChoices(IReadOnlyList<UserResponseDto> students) =>
+        students.Count < 2
+            ? []
+            : students.Select(student => new ChoiceItem
+            {
+                Label = $"{student.FirstName} {student.LastName}",
+                Detail = $"TC {student.TcNo} · Doğum {student.BirthDate:dd.MM.yyyy}",
+                Message = $"{student.FirstName} {student.LastName} (TC {student.TcNo}) öğrencisini seçtim."
+            }).ToList();
 
     [McpServerTool(UseStructuredContent = true)]
     [Description(
@@ -237,10 +250,18 @@ public class StudentInfo
     };
 }
 
+public class ChoiceItem
+{
+    public string Label { get; init; } = default!;
+    public string? Detail { get; init; }
+    public string Message { get; init; } = default!;
+}
+
 public class StudentSearchResult
 {
     public bool Found { get; init; }
     public List<StudentInfo> Students { get; init; } = [];
+    public List<ChoiceItem> Choices { get; init; } = [];
     public string? Hint { get; init; }
 }
 
@@ -251,6 +272,7 @@ public class StudentListResult
     public int PageSize { get; init; }
     public bool HasMore { get; init; }
     public List<StudentInfo> Students { get; init; } = [];
+    public List<ChoiceItem> Choices { get; init; } = [];
 }
 
 public class StudentPreview

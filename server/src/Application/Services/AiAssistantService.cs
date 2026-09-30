@@ -157,6 +157,7 @@ public class AiAssistantService : IAiAssistantService
                 {
                     Status = AiChatStatus.Completed,
                     Message = response.Content ?? string.Empty,
+                    Choices = turn.Choices,
                     Trace = TakeNewTrace(turn)
                 };
             }
@@ -201,6 +202,12 @@ public class AiAssistantService : IAiAssistantService
                         Content = ex.Message,
                         IsError = true
                     };
+                }
+
+                if (!result.IsError && result.StructuredContent.HasValue &&
+                    TryReadChoices(result.StructuredContent.Value) is { } choices)
+                {
+                    turn.Choices = choices;
                 }
 
                 AiAction? action = null;
@@ -347,6 +354,23 @@ public class AiAssistantService : IAiAssistantService
         {
             return false;
         }
+    }
+
+    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
+
+    // Tool sonucundaki "choices" dizisi (boş dizi listeyi temizler)
+    private static List<AiChoice>? TryReadChoices(JsonElement structuredContent)
+    {
+        if (structuredContent.ValueKind != JsonValueKind.Object ||
+            !structuredContent.TryGetProperty("choices", out var choices) ||
+            choices.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        return choices.Deserialize<List<AiChoice>>(WebJson)?
+            .Where(choice => !string.IsNullOrWhiteSpace(choice.Label) && !string.IsNullOrWhiteSpace(choice.Message))
+            .ToList();
     }
 
     // Her cevapta istemciye sadece daha önce gönderilmemiş trace adımları gider

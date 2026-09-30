@@ -39,6 +39,13 @@ export interface AiTraceStep {
   durationMs: number
 }
 
+/** Cevabın altında tıklanabilir seçenek; tıklanınca message kullanıcı mesajı olarak gönderilir */
+export interface AiChoice {
+  label: string
+  detail?: string
+  message: string
+}
+
 export interface AiChatResponse {
   // awaiting_client: actions uygulanıp sonuçları continueAssistant ile gönderilmeli
   status: 'completed' | 'awaiting_client'
@@ -46,6 +53,7 @@ export interface AiChatResponse {
   message: string
   missingFields: string[]
   actions: AiAction[]
+  choices?: AiChoice[]
   trace: AiTraceStep[]
 }
 

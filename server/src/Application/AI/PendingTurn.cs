@@ -18,6 +18,9 @@ public class PendingTurn
 
     public List<AiTraceStep> Trace { get; set; } = [];
 
+    // Tool sonuçlarından gelen tıklanabilir seçenekler; son dönen liste geçerlidir
+    public List<AiChoice> Choices { get; set; } = [];
+
     // İstemciye daha önce gönderilmiş trace adımı sayısı (her cevapta sadece yeniler gider)
     public int TraceSentCount { get; set; }
 
