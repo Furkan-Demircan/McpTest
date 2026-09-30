@@ -60,6 +60,38 @@ public class UserService : IUserService
         return user is null ? null : UserResponseDto.FromEntity(user);
     }
 
+    public async Task<UserResponseDto?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByEmailAsync(email.Trim(), cancellationToken);
+        return user is null ? null : UserResponseDto.FromEntity(user);
+    }
+
+    public async Task<IReadOnlyList<UserResponseDto>> SearchUsersByNameAsync(string name, int limit, CancellationToken cancellationToken = default)
+    {
+        var terms = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (terms.Length == 0)
+        {
+            return [];
+        }
+
+        var users = await _userRepository.SearchByNameAsync(terms, limit, cancellationToken);
+        return users.Select(UserResponseDto.FromEntity).ToList();
+    }
+
+    public async Task<PagedResultDto<UserResponseDto>> GetUsersPageAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(page, 1);
+        var (users, total) = await _userRepository.GetPageAsync((page - 1) * pageSize, pageSize, cancellationToken);
+
+        return new PagedResultDto<UserResponseDto>
+        {
+            Items = users.Select(UserResponseDto.FromEntity).ToList(),
+            Page = page,
+            PageSize = pageSize,
+            Total = total
+        };
+    }
+
     public async Task<IReadOnlyList<UserResponseDto>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
         var users = await _userRepository.GetAllAsync(cancellationToken);

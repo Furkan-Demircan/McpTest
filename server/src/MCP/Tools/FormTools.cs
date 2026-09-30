@@ -20,7 +20,7 @@ public static class FormTools
     "navigate_to_page ile gidildiyse anahtarlar o sayfanın get_page_schema alan adlarıdır (name). Uydurulmamalıdır. " +
     "Örnek: values: {'firstName': 'Ahmet', 'tcNo': '12345678901'}. " +
     "Tarihler YYYY-MM-DD formatında iletilir. Bir alanı temizlemek için değer olarak boş string (\"\") ver. " +
-    "Veritabanına kayıt yapmaz; kaydetmek kullanıcıya aittir.")]
+    "Veritabanına kayıt yapmaz; formu kullanıcı kaydeder (sohbetten öğrenci kaydı için save_student).")]
     public static FillFieldsResult FillFields(
     AppCatalogStore catalog,
     [Description("Alan kimliği ve yazılacak değer çiftleri sözlüğü.")]

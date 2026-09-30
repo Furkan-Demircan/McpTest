@@ -39,6 +39,35 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
 
+    // Her terim adda veya soyadda geçmeli (büyük/küçük harf duyarsız)
+    public async Task<IReadOnlyList<User>> SearchByNameAsync(IReadOnlyList<string> terms, int limit, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Users.AsQueryable();
+
+        foreach (var term in terms)
+        {
+            var pattern = $"%{term}%";
+            query = query.Where(u => EF.Functions.ILike(u.FirstName, pattern) || EF.Functions.ILike(u.LastName, pattern));
+        }
+
+        return await query
+            .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(int skip, int take, CancellationToken cancellationToken = default)
+    {
+        var total = await _context.Users.CountAsync(cancellationToken);
+        var items = await _context.Users
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
     public async Task<bool> ExistsByTcNoAsync(string tcNo, CancellationToken cancellationToken = default)
     {
         return await _context.Users

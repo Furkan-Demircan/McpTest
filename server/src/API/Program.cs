@@ -1,5 +1,6 @@
 using API.Catalog;
 using API.Middlewares;
+using API.Tools;
 using Application;
 using Application.AI;
 using Application.MCP;
@@ -25,7 +26,10 @@ builder.Services.AddAppKnowledge();
 builder.Services
     .AddMcpServer()
     .WithHttpTransport()
-    .WithToolsFromAssembly(typeof(FormTools).Assembly);
+    .WithToolsFromAssembly(typeof(FormTools).Assembly)
+    // Veri tool'ları (öğrenci arama/listeleme/kayıt) uygulama servislerine bağlı, bu host'ta durur
+    .WithToolsFromAssembly(typeof(StudentTools).Assembly);
+builder.Services.AddSingleton<PendingConfirmationStore>();
 
 
 // MCP Client Yapılandırması

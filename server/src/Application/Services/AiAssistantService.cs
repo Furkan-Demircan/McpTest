@@ -179,8 +179,15 @@ public class AiAssistantService : IAiAssistantService
                             turn.CurrentPage,
                             tools);
 
-                    result =
-                        await _mcpClientService.CallToolAsync(
+                    result = IsConfirmationWithoutUser(turn.Messages, toolCall)
+                        ? new McpToolResult
+                        {
+                            Content = "Onay kullanıcıdan gelmeli: önizleme bu turda gösterildi. Önizlemeyi kullanıcıya " +
+                                      "göster, 'Kaydedeyim mi?' diye sor ve cevabını bekle; confirmed=true'yu ancak " +
+                                      "kullanıcı sonraki mesajında onaylarsa gönder.",
+                            IsError = true
+                        }
+                        : await _mcpClientService.CallToolAsync(
                             toolCall.Name,
                             arguments,
                             cancellationToken);
@@ -286,6 +293,60 @@ public class AiAssistantService : IAiAssistantService
             Message = "İşlemi tamamlayamadım (tool çağrı limiti aşıldı). Lütfen isteğinizi daha net ifade edin.",
             Trace = TakeNewTrace(turn)
         };
+    }
+
+    /// <summary>
+    /// Onay gerektiren yazma tool'ları (örn. save_student) önce önizleme (needs_confirmation) döner,
+    /// kullanıcı onaylayınca confirmed=true ile tekrar çağrılır. Onay kullanıcının SONRAKİ mesajından
+    /// gelmelidir: son kullanıcı mesajından beri bu tool bir önizleme döndürdüyse, aynı turdaki
+    /// confirmed=true çağrısı modelin kendi kararıdır ve reddedilir.
+    /// </summary>
+    private static bool IsConfirmationWithoutUser(
+        List<ChatMessage> messages,
+        AiToolCall toolCall)
+    {
+        if (!IsConfirmedCall(toolCall.Arguments))
+        {
+            return false;
+        }
+
+        var lastUserIndex = messages.FindLastIndex(message => message.Role == "user");
+
+        var sameToolCallIds = messages
+            .Skip(lastUserIndex + 1)
+            .Where(message => message.ToolCalls != null)
+            .SelectMany(message => message.ToolCalls!)
+            .Where(call => call.Name == toolCall.Name)
+            .Select(call => call.Id)
+            .ToHashSet();
+
+        return messages
+            .Skip(lastUserIndex + 1)
+            .Any(message =>
+                message.Role == "tool" &&
+                message.ToolCallId != null &&
+                sameToolCallIds.Contains(message.ToolCallId) &&
+                message.Content?.Contains("needs_confirmation", StringComparison.Ordinal) == true);
+    }
+
+    private static bool IsConfirmedCall(string? arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(arguments);
+            return document.RootElement.ValueKind == JsonValueKind.Object &&
+                   document.RootElement.TryGetProperty("confirmed", out var confirmed) &&
+                   confirmed.ValueKind == JsonValueKind.True;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     // Her cevapta istemciye sadece daha önce gönderilmemiş trace adımları gider
