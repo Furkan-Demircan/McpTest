@@ -19,10 +19,12 @@ import { createHighlightHandler } from '../assistant/actions/highlightHandler'
 import { createFillFieldsHandler } from '../assistant/actions/fillFieldsHandler'
 import { AssistantTrace } from './AssistantTrace'
 import { captureScreenSnapshot } from '../assistant/screenSnapshot'
+import { observeAppRequests } from '../assistant/appEvents'
 
 interface Message {
   id: string
-  sender: 'bot' | 'user'
+  // 'event': uygulamada gerçekten olan bir şey (kayıt isteği sonucu, sayfa değişimi)
+  sender: 'bot' | 'user' | 'event'
   text: string
   time: string
   // Karşılama ve hata mesajları LLM geçmişine gönderilmez
@@ -162,6 +164,27 @@ export const AssistantWidget: React.FC = () => {
     'Hangi bilgiler gerekli?',
     'Kayıtları nasıl görürüm?',
   ]
+
+  // Uygulama olayları: sohbete ara not olarak girer ve modele kayıt sınırlarını gösterir.
+  // Sohbet başlamadan önceki olaylar eklenmez (gereksiz kalabalık olmasın).
+  const addAppEvent = (text: string) => {
+    setMessages((prev) =>
+      prev.some((message) => message.sender === 'user')
+        ? [...prev, { id: getNextId(), sender: 'event', text, time: getCurrentTimeString() }]
+        : prev
+    )
+  }
+
+  useEffect(() => observeAppRequests(addAppEvent), [])
+
+  const previousPathRef = useRef(location.pathname)
+  useEffect(() => {
+    const previous = previousPathRef.current
+    previousPathRef.current = location.pathname
+    if (previous !== location.pathname) {
+      addAppEvent(`Kullanıcı ${previous} sayfasından ${location.pathname} sayfasına geçti.`)
+    }
+  }, [location.pathname])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -346,7 +369,9 @@ export const AssistantWidget: React.FC = () => {
         role:
           message.sender === 'bot'
             ? 'assistant'
-            : 'user',
+            : message.sender === 'event'
+              ? 'event'
+              : 'user',
         content: message.text,
       }))
 
@@ -479,7 +504,11 @@ export const AssistantWidget: React.FC = () => {
           </div>
 
           <div className="assistant-messages">
-            {messages.map((msg) => (
+            {messages.map((msg) => msg.sender === 'event' ? (
+              <div key={msg.id} className="chat-event" title={msg.time}>
+                {msg.text}
+              </div>
+            ) : (
               <div
                 key={msg.id}
                 className={`chat-bubble ${

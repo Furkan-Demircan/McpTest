@@ -229,6 +229,18 @@
   align-self: flex-end;
 }
 
+/* Uygulama olayı (kayıt isteği sonucu, sayfa değişimi) */
+.chat-event {
+  align-self: center;
+  max-width: 90%;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.75;
+  text-align: center;
+  padding: 2px 8px;
+  border-top: 1px dashed var(--border);
+}
+
 /* Trace Paneli (keşif / debug) */
 .assistant-trace {
   margin-top: 8px;

@@ -36,6 +36,12 @@ export const AppFormDatePicker = <TFieldValues extends FieldValues>({
       return value && isValid(value) ? toIso(value) : undefined
     },
     write: (value) => {
+      // Boş değer tarihi temizler
+      if (value == null || String(value).trim() === '') {
+        field.onChange(null)
+        return { ok: true }
+      }
+
       const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? ''))
       if (!match) {
         return { ok: false, reason: 'Tarih YYYY-MM-DD biçiminde olmalı.' }

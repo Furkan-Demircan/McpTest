@@ -1,7 +1,8 @@
 import type { ScreenSnapshot } from '../assistant/screenSnapshot'
 
 export interface ChatMessage {
-  role: 'user' | 'assistant'
+  // 'event': istemcinin gözlediği uygulama olayı (sunucu modele sistem notu olarak iletir)
+  role: 'user' | 'assistant' | 'event'
   content: string
 }
 

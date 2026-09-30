@@ -19,7 +19,8 @@ public static class FormTools
     "'values' anahtarları ekran özetindeki alan kimlikleridir (field; yoksa name/id). Başka bir sayfaya " +
     "navigate_to_page ile gidildiyse anahtarlar o sayfanın get_page_schema alan adlarıdır (name). Uydurulmamalıdır. " +
     "Örnek: values: {'firstName': 'Ahmet', 'tcNo': '12345678901'}. " +
-    "Tarihler YYYY-MM-DD formatında iletilir. Veritabanına kayıt yapmaz; kaydetmek kullanıcıya aittir.")]
+    "Tarihler YYYY-MM-DD formatında iletilir. Bir alanı temizlemek için değer olarak boş string (\"\") ver. " +
+    "Veritabanına kayıt yapmaz; kaydetmek kullanıcıya aittir.")]
     public static FillFieldsResult FillFields(
     AppCatalogStore catalog,
     [Description("Alan kimliği ve yazılacak değer çiftleri sözlüğü.")]
@@ -34,8 +35,12 @@ public static class FormTools
 
         foreach (var (key, value) in values)
         {
+            // null ve "" alanı temizle demektir
             if (value is null)
+            {
+                normalizedData[key] = string.Empty;
                 continue;
+            }
 
             // Tarih kontrolü ve normalizasyonu
             if (value is string strVal &&

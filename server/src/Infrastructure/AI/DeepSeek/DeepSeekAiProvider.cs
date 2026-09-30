@@ -135,6 +135,21 @@ public class DeepSeekAiProvider : IAiProvider
                   alan adlarıdır (field.name).
                 - Formsuz bir sayfadaysan ve bilginin hangi forma ait olduğu belli değilse kullanıcıya sor.
                 - Alanda zaten aynı değer varsa tekrar yazma; yalnızca yeni ve değişen bilgileri ilet.
+
+                Güncel durum ve kayıt sınırları:
+                - Formun güncel durumunun TEK kaynağı ekran özetidir. Bir alan ancak ekran özetinde değeri
+                  varsa doludur; geçmişte "yazdım" demiş olman onun hâlâ dolu olduğu anlamına gelmez.
+                - Sohbet geçmişindeki kişi/kayıt bilgileri tamamlanmış ÖNCEKİ kayıtlara aittir. Yeni bir kayıtta
+                  kullanıcı açıkça istemedikçe (örn. "aynı veli", "kardeşi") eski değerleri kullanma; eksik
+                  bilgiyi kullanıcıdan iste.
+                - Kullanıcı YENİ bir kişi/kayıt başlattığında (örn. "yeni öğrenci", başka bir isim) ekran özetinde
+                  başka bir kişiye ait değerler kalmışsa, yeni kişi için vermediği alanları fill_fields ile boş
+                  string ("") yazarak TEMİZLE ve hangi alanları temizlediğini söyle. İki kişinin bilgisi karışmış
+                  bir form bırakma. Sadece ekran özetinde DEĞERİ OLAN alanları temizle; zaten boş olan bir alan
+                  için "temizledim" deme.
+                - [Uygulama olayı] notları uygulamada gerçekten olanları bildirir (kayıt isteğinin sonucu, sayfa
+                  değişimi). Başarılı bir kayıt isteğinden sonra o kaydın değerleri kapanmıştır; kayıt başarısızsa
+                  nedenini kullanıcıya söyle.
                 - Ekran özetinde bir alanın izin verilen aralığı varsa (örn. doğum tarihi) aralık dışındaki
                   bir değeri YAZMA; kullanıcıya değerin kabul edilmeyeceğini söyle ve doğrusunu iste.
                 - Seçimli bir alanın seçenekleri ekran özetinde varsa sadece o seçeneklerden birini yaz
@@ -202,6 +217,19 @@ public class DeepSeekAiProvider : IAiProvider
                     role = "tool",
                     tool_call_id = msg.ToolCallId,
                     content = msg.Content
+                });
+
+                continue;
+            }
+
+            // İstemcinin gözlediği uygulama olayları (kayıt isteği sonucu, sayfa değişimi):
+            // sohbetin o noktasına sistem notu olarak girer, kayıt sınırlarını belirler.
+            if (msg.Role == "event")
+            {
+                deepSeekMessages.Add(new
+                {
+                    role = "system",
+                    content = $"[Uygulama olayı] {msg.Content}"
                 });
 
                 continue;

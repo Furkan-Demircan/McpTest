@@ -44,6 +44,12 @@ export const AppFormSelect = <TFieldValues extends FieldValues>({
     },
     options: () => options.map((option) => ({ value: option.value, label: labelOf(option) })),
     write: (value) => {
+      // Boş değer seçimi temizler
+      if (value == null || String(value).trim() === '') {
+        field.onChange(null)
+        return { ok: true }
+      }
+
       const text = normalize(String(value ?? ''))
       const match = options.find(
         (option) => normalize(String(option.value)) === text || normalize(labelOf(option)) === text
